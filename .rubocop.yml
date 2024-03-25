@@ -1,0 +1,11 @@
+AllCops:
+  NewCops: enable
+  Exclude:
+    - 'db/schema.rb'
+    - 'db/migrate/*'
+    - 'config/**/*'
+    - 'bin/*'
+Layout/LineLength:
+  Max: 120
+Style/Documentation:
+  Enabled: false
