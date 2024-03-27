@@ -1,0 +1,86 @@
+<% if policy(@folders).create? %>
+  <button type="button" class="btn btn-primary btn-new" data-toggle="modal" data-target="#simpleModal">
+    <i class="fa-solid fa-folder-plus"></i> Nueva Carpeta
+  </button>
+<% end %>
+<div class="card-container">
+  <% @folders.each do |folder| %>
+
+    <div class="card card-custom">
+      <div class="card-header card-header-custom">
+        <h5 class="card-title"><i class="fas fa-folder"></i> <%= folder.name %></h5>
+      </div>
+      <div class="card-body descrption">
+        <p class="card-text <%= 'text-muted' if folder.description.blank? %>" ><%= folder.description.present? ? truncate(folder.description, length: 200) : "Descripción no disponible" %></p>
+        <div class="folder_user">
+        <span class="badge badge-pill badge-custom document-count"><%= folder.subfolders.count %> <i class="fas fa-folder"></i> <%= folder.documents.count %> <i class="fa-solid fa-file-lines"></i></span>
+        <span class="badge badge-pill badge-custom">
+          <i class="fa-regular fa-user"></i>
+          <span><%= folder.user.fullname %></span>
+        </span>
+      </div>
+      </div>
+      <div class="card-footer">
+        <div class="icon-container">
+          <% if policy(folder).show? %>
+            <%= link_to folder_path(folder) do %>
+              <i class="fas fa-eye color-eye mx-1"></i>
+            <% end %>
+          <% end %>
+          <% if policy(folder).update? %>
+            <%= link_to edit_folder_path(folder) do %>
+              <i class="fas fa-edit color-edit mx-1"></i>
+            <% end %>
+          <% end %>
+          <% if policy(folder).destroy? %>
+            <%= link_to folder, method: :delete, data: { confirm: '¿Estás seguro?' } do %>
+              <i class="fas fa-trash color-delete mx-1"></i>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+  <% end %>
+</div>
+
+<div class="modal fade" id="simpleModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalLabel">Nueva Carpeta</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <%= form_with(model: Folder.new, local: true) do |form| %>
+          <div class="form-group">
+            <%= form.label :name, 'Nombre de la carpeta' %>
+            <%= form.text_field :name, class: 'form-control' %>
+          </div>
+          <div class="form-group">
+            <%= form.label :description, 'Descripción' %>
+            <%= form.text_area :description, class: 'form-control' %>
+          </div>
+          <div class="form-group d-grid gap-2 d-flex justify-content-end">
+            <%= form.submit 'Crear', class: 'btn btn-primary' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('turbolinks:load', () => {
+  const simpleModal = new bootstrap.Modal(document.getElementById('simpleModal'), {});
+  document.querySelector('[data-toggle="modal"]').addEventListener('click', () => simpleModal.show());
+  document.querySelector('[data-dismiss="modal"]').addEventListener('click', () => simpleModal.hide());
+});
+</script>
+
+
+
+
+

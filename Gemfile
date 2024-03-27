@@ -3,7 +3,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.6.8'
+ruby '3.0.4'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
 gem 'rails', '~> 6.0.6', '>= 6.0.6.1'
@@ -27,6 +27,7 @@ gem 'jbuilder', '~> 2.7'
 gem 'devise'
 gem 'dotenv-rails'
 gem 'pundit'
+gem 'uglifier', '>= 1.3.0'
 
 # Use Active Storage variant
 # gem 'image_processing', '~> 1.2'
@@ -53,8 +54,6 @@ group :development do
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'brakeman', require: false
   gem 'rack-mini-profiler', '~> 2.0'
-  gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
 end
 
 group :test do

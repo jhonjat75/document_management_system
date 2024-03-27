@@ -1,0 +1,150 @@
+body {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+		-ms-user-select: none;
+			user-select: none;
+	display: flex;
+	justify-content: center;
+	align-items: first baseline;
+	background: #dde5f4;
+	height: 100vh;
+  }
+  .title{
+	text-align: center;
+  color: #3e4684;
+  font-weight: 600;
+  margin: 0;
+  }
+   .email {
+	background: white;
+	box-shadow: 0 0 2em #e6e9f9;
+	padding: 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	border-radius: 20px;
+	color: #4d4d4d;
+  }
+  label{
+	font-weight: 300 !important;
+  }
+   .email input {
+	outline: none;
+	border: none;
+	border-bottom: 1px solid #c7dbed;
+  }
+   .email input::-moz-placeholder {
+	color: #969696;
+	font-size: 0.9em;
+  }
+   .email input:-ms-input-placeholder {
+	color: black;
+	font-size: 0.9em;
+  }
+   .email input::placeholder {
+	color: #969696;
+	font-size: 0.9em;
+  }
+   .email ion-icon {
+	color: #4d4d4d;
+	margin-bottom: -0.2em;
+  }
+   .password {
+	background: white;
+	box-shadow: 0 0 2em #e6e9f9;
+	padding: 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	border-radius: 20px;
+	color: #4d4d4d;
+	margin-top: 1rem;
+  }
+   .password input {
+	outline: none;
+	border: none;
+	border-bottom: 1px solid #c7dbed;
+  }
+   .password input::-moz-placeholder {
+	color: black;
+	font-size: 0.9em;
+  }
+   .password input:-ms-input-placeholder {
+	color: black;
+	font-size: 0.9em;
+  }
+   .password input::placeholder {
+	color: black;
+	font-size: 0.9em;
+  }
+   .password ion-icon {
+	color: #4d4d4d;
+	margin-bottom: -0.2em;
+  }
+   .password .show-hide {
+	margin-right: -5em;
+  }
+   .login {
+	padding: 1em;
+	background: #3e4684;
+	color: white;
+	border: none;
+	border-radius: 30px;
+	font-weight: 600;
+	width: 100%;
+  }
+  
+  .button {
+	cursor: pointer;
+  }
+
+
+
+  
+
+.login-container {
+	background: #f1f7fe;
+	padding: 2em;
+	display: flex;
+	flex-direction: column;
+	border-radius: 30px;
+	box-shadow: 0 0 2em #e6e9f9;
+	gap: 2em;
+	margin-top: 3rem;
+  }
+
+  .form-input {
+	margin-bottom: 20px;
+  }
+
+  .form-input label {
+	display: block;
+	margin-bottom: 5px;
+  }
+
+  .form-control {
+	width: 100%;
+	padding: 10px;
+	border: 1px solid #ddd;
+	border-radius: 0px !important;
+	box-sizing: border-box;
+  }
+
+  .form-checkbox {
+	margin-bottom: 20px;
+  }
+
+  .form-actions {
+	text-align: right;
+  }
+	.nav-sidebar.flex-column {
+		display: flex;
+		flex-direction: column;
+		height: auto;
+	}
+
+	.logout-link {
+		position: fixed;
+		bottom: 0;
+		width: 100%;
+	}

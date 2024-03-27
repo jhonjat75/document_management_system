@@ -1,0 +1,143 @@
+:root {
+  --main-color: #4477CE;
+}
+
+.wrapper{
+  width: 100%;
+}
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.color-eye{
+  color: #5591d2;
+}
+.color-edit{
+  color: #99938e
+}
+.color-delete{
+  color: #d44a56
+}
+.text-muted{
+  color: #c3c3c3 !important;
+}
+.btn-new{
+  margin: 8px;
+  border-radius: 20px !important;
+}
+
+.card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card.card-custom {
+	flex-basis: 20rem;
+  flex-grow: 1;
+  margin: 0.5rem;
+
+}
+
+.card-header.card-header-custom {
+  background: #3e4684;
+  padding: 5px 10px;
+  position: relative;
+	color: white;
+}
+
+.card-header .document-count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: #7e9bcc;
+  border-radius: 10px;
+  padding: 2px 5px;
+  color: white;
+  font-size: x-small;
+}
+
+.card-body {
+  padding: 5px 10px;
+  background: #FFF;
+  color: #2f2f2f;
+  font-weight: 300;
+}
+.descrption p{
+  margin-bottom: 0;
+}
+
+.card-title {
+  font-size: 1.1em;
+  margin-bottom: 0em;
+  font-weight: 200;
+  text-transform: capitalize;
+}
+.card-title i{
+  size: 20px;
+}
+
+.card-text {
+  font-size: 0.9em;
+}
+
+.card-footer {
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: ghostwhite;
+}
+
+.icon-container {
+  margin-left: auto;
+}
+
+.badge-custom {
+  background-color: #5A62D6;
+  color: #ffffff;
+}
+
+.main-footer{
+  font-weight: 300;
+}
+.main-header{
+  background-color: #dde5f4;;
+}
+
+
+
+.modal-header, .header-color{
+  background-color: #3e4684;
+  color: white;
+}
+
+
+@media (max-width: 1600px) {
+  .card-custom {
+    max-width: calc(20% - 1rem);
+  }
+}
+@media (max-width: 1400px) {
+  .card-custom {
+    max-width: calc(25% - 1rem);
+  }
+}
+@media (max-width: 992px) {
+  .card-custom {
+    max-width: calc(33.3% - 1rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-custom {
+    max-width: calc(50% - 1rem);
+  }
+}
+
+@media (max-width: 576px) {
+  .card-custom {
+    max-width: 100%;
+  }
+}
