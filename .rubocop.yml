@@ -4,7 +4,8 @@ AllCops:
     - 'db/schema.rb'
     - 'db/migrate/*'
     - 'config/**/*'
-    - 'bin/*'
+    - 'bin/**/*'
+    - 'node_modules/**/*'
 Layout/LineLength:
   Max: 120
 Style/Documentation:
