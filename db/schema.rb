@@ -10,10 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_03_27_211953) do
+ActiveRecord::Schema.define(version: 2024_03_30_190328) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "documents", force: :cascade do |t|
+    t.string "name"
+    t.string "file_path"
+    t.integer "folder_id"
+    t.integer "user_id"
+  end
+
+  create_table "folders", force: :cascade do |t|
+    t.string "name"
+    t.integer "user_id"
+    t.integer "parent_folder_id"
+    t.index ["parent_folder_id"], name: "index_folders_on_parent_folder_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
@@ -25,7 +39,7 @@ ActiveRecord::Schema.define(version: 2024_03_27_211953) do
     t.datetime "updated_at", precision: 6, null: false
     t.string "first_name"
     t.string "last_name"
-    t.string "role"
+    t.integer "role", default: 1
     t.string "employee_id"
     t.string "department"
     t.string "position"

@@ -8,5 +8,7 @@ require("turbolinks").start()
 require("@rails/activestorage").start()
 require("channels")
 import "../stylesheets/custom_styles.css"
+import "../stylesheets/login.css"
 import 'admin-lte/dist/css/adminlte.min.css';
 import 'admin-lte/dist/js/adminlte.min.js';
+import "@fortawesome/fontawesome-free/css/all.css";

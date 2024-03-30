@@ -3,8 +3,7 @@
 Rails.application.routes.draw do
   get 'users/index'
   devise_for :users, controllers: {
-    sessions: 'users/sessions',
-    registrations: 'users/registrations'
+    sessions: 'users/sessions'
   }
   root to: "users#index"
   resources :users, only: [:index]

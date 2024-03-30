@@ -1,0 +1,50 @@
+/* h2 {
+	color: rgb(59, 25, 209) !important;
+} */
+
+.login-container {
+	max-width: 400px;
+	margin: 30px auto;
+	padding: 20px;
+	background: #fff;
+	border-radius: 5px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-input {
+	margin-bottom: 20px;
+  }
+
+  .form-input label {
+	display: block;
+	margin-bottom: 5px;
+  }
+
+  .form-control {
+	width: 100%;
+	padding: 10px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	box-sizing: border-box;
+  }
+
+  .form-checkbox {
+	margin-bottom: 20px;
+  }
+
+  .btn-primary {
+	background-color: #0069d9;
+	border-color: #0062cc;
+	color: white;
+	padding: 10px 20px;
+	border-radius: 4px;
+	cursor: pointer;
+  }
+
+  .btn-primary:hover {
+	background-color: #005cbf;
+  }
+
+  .form-actions {
+	text-align: right;
+  }
