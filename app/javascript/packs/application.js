@@ -12,3 +12,9 @@ import "../stylesheets/login.css"
 import 'admin-lte/dist/css/adminlte.min.css';
 import 'admin-lte/dist/js/adminlte.min.js';
 import "@fortawesome/fontawesome-free/css/all.css";
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
+import '@popperjs/core';
+import $ from 'jquery';
+global.$ = $;
+global.jQuery = $;

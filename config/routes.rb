@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   devise_for :users, controllers: {
     sessions: 'users/sessions'
   }
-  root to: "users#index"
+  root to: "folders#index"
   resources :users, only: [:index]
+  resources :folders
 end

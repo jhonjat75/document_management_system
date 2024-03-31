@@ -1,0 +1,24 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Name:</strong>
+  <%= @folder.name %>
+</p>
+
+<p>
+  <strong>Description:</strong>
+  <%= @folder.description %>
+</p>
+
+<p>
+  <strong>User:</strong>
+  <%= @folder.user_id %>
+</p>
+
+<p>
+  <strong>Parent folder:</strong>
+  <%= @folder.parent_folder_id %>
+</p>
+
+<%= link_to 'Edit', edit_folder_path(@folder) %> |
+<%= link_to 'Back', folders_path %>
