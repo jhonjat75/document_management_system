@@ -9,4 +9,7 @@ class User < ApplicationRecord
   validates :email, uniqueness: true
 
   enum role: { super_admin: 0, admin: 1, driver: 2 }
+  def fullname
+    "#{first_name} #{last_name}"
+  end
 end

@@ -1,3 +1,7 @@
+:root {
+  --main-color: #4477CE;
+}
+
 .card-container {
   display: flex;
   flex-wrap: wrap;
@@ -19,7 +23,7 @@
 }
 
 .card-header.card-header-custom {
-  background: #6c5ce7;
+  background: var(--main-color);
   padding: 10px;
   position: relative;
 	color: white;
@@ -29,7 +33,7 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #9388e8;
+  background: #7e9bcc;
   border-radius: 10px;
   padding: 2px 5px;
   color: white;
@@ -37,7 +41,7 @@
 
 .card-body {
   padding: 10px;
-  background: #6c5ce7;
+  background: var(--main-color);
 	color: white;
 }
 
@@ -50,16 +54,19 @@
   font-size: 0.9em;
 }
 
-.avatars-custom {
-  margin-right: 50px;
-}
-
 .card-footer {
-  background: #f2f3f5;
-  padding: 10px;
   display: flex;
   align-items: center;
-  color: black;
+  justify-content: space-between;
+}
+
+.icon-container {
+  margin-left: auto;
+}
+
+.badge-custom {
+  background-color: var(--main-color);
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {

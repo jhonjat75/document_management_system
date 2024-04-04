@@ -48,3 +48,14 @@
   .form-actions {
 	text-align: right;
   }
+	.nav-sidebar.flex-column {
+		display: flex;
+		flex-direction: column;
+		height: auto;
+	}
+
+	.logout-link {
+		position: fixed;
+		bottom: 0;
+		width: 100%;
+	}

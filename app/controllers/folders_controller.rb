@@ -1,15 +1,18 @@
 # frozen_string_literal: true
 
 class FoldersController < ApplicationController
+  before_action :authenticate_user!
   before_action :set_folder, only: %i[show edit update destroy]
 
   # GET /folders or /folders.json
   def index
-    @folders = Folder.all
+    @folders = Folder.where(parent_folder_id: nil)
   end
 
   # GET /folders/1 or /folders/1.json
-  def show; end
+  def show
+    authorize @folder
+  end
 
   # GET /folders/new
   def new
@@ -22,12 +25,19 @@ class FoldersController < ApplicationController
 
   # POST /folders or /folders.json
   def create
+    authorize @folder
     @folder = Folder.new(folder_params)
     @folder.user_id = current_user.id
 
     respond_to do |format|
       if @folder.save
-        format.html { redirect_to folders_url, notice: 'Folder was successfully created.' }
+        if @folder.parent_folder_id
+          format.html do
+            redirect_to folder_path(@folder.parent_folder_id), notice: 'Subfolder was successfully created.'
+          end
+        else
+          format.html { redirect_to folders_url, notice: 'Folder was successfully created.' }
+        end
         format.json { render :show, status: :created, location: @folder }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,9 +48,16 @@ class FoldersController < ApplicationController
 
   # PATCH/PUT /folders/1 or /folders/1.json
   def update
+    authorize @folder
     respond_to do |format|
       if @folder.update(folder_params)
-        format.html { redirect_to folder_url(@folder), notice: 'Folder was successfully updated.' }
+        if @folder.parent_folder_id
+          format.html do
+            redirect_to folder_path(@folder.parent_folder_id), notice: 'Subfolder was successfully updated.'
+          end
+        else
+          format.html { redirect_to folders_url, notice: 'Folder was successfully updated.' }
+        end
         format.json { render :show, status: :ok, location: @folder }
       else
         format.html { render :edit, status: :unprocessable_entity }
@@ -51,6 +68,7 @@ class FoldersController < ApplicationController
 
   # DELETE /folders/1 or /folders/1.json
   def destroy
+    authorize @folder
     @folder.destroy
 
     respond_to do |format|
