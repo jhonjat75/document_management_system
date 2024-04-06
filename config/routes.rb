@@ -8,4 +8,7 @@ Rails.application.routes.draw do
   root to: "folders#index"
   resources :users, only: [:index]
   resources :folders
+  resources :folders do
+    resources :documents, only: [:create]
+  end
 end

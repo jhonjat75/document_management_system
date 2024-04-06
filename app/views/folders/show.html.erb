@@ -1,7 +1,67 @@
 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#simpleModal">
   <i class="fa-solid fa-folder-plus"></i>
 </button>
-<br>
+<div class="modal fade" id="simpleModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalLabel">Nueva Carpeta</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <%= form_with(model: Folder.new, local: true) do |form| %>
+          <div class="form-group">
+            <%= form.label :name, 'Nombre de la carpeta' %>
+            <%= form.text_field :name, class: 'form-control' %>
+          </div>
+          <div class="form-group">
+            <%= form.label :description, 'Descripción' %>
+            <%= form.text_area :description, class: 'form-control' %>
+          </div>
+          <%= form.hidden_field :parent_folder_id, value: @folder.id %>
+          <div class="form-group">
+            <%= form.submit 'Crear', class: 'btn btn-primary' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#uploadFileModal">
+  <i class="fa-solid fa-cloud-arrow-up"></i>
+</button>
+<div class="modal fade" id="uploadFileModal" tabindex="-1" role="dialog" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="uploadFileModalLabel">Subir Archivo</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <%= form_with(model: [@folder, Document.new], local: true) do |form| %>
+          <div class="form-group">
+            <%= form.label :name, 'Nombre del documento' %>
+            <%= form.text_field :name, required: true, class: 'form-control' %>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :file, 'Seleccionar archivo' %>
+            <%= form.file_field :file, required: true, direct_upload: true, class: 'form-control-file' %>
+          </div>
+
+          <%= form.submit 'Subir Archivo', class: 'btn btn-primary' %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="card-container">
   <% @folder.subfolders.each do |folder| %>
     <div class="card card-custom">
@@ -35,39 +95,46 @@
   <% end %>
 </div>
 
-<div class="modal fade" id="simpleModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalLabel">Nueva Carpeta</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <%= form_with(model: Folder.new, local: true) do |form| %>
-          <div class="form-group">
-            <%= form.label :name, 'Nombre de la carpeta' %>
-            <%= form.text_field :name, class: 'form-control' %>
-          </div>
-          <div class="form-group">
-            <%= form.label :description, 'Descripción' %>
-            <%= form.text_area :description, class: 'form-control' %>
-          </div>
-          <%= form.hidden_field :parent_folder_id, value: @folder.id %>
-          <div class="form-group">
-            <%= form.submit 'Crear', class: 'btn btn-primary' %>
-          </div>
+
+<div class="uploaded-files">
+  <h3>Archivos</h3>
+  <% @folder.documents.each do |document| %>
+    <div class="file">
+      <p><%= document.name %></p>
+      <% if document.file.attached? %>
+        <% if document.file.content_type.start_with?('image/') %>
+          <%= image_tag document.file.variant(resize_to_limit: [100, 100]) %>
         <% end %>
-      </div>
+        <% if document.file.content_type == 'application/pdf' %>
+          <iframe src="<%= rails_blob_path(document.file, disposition: "inline") %>" width="250" height="150"></iframe>
+        <% end %>
+      <% end %>
+      <%= link_to "Descargar Documento", rails_blob_path(document.file, disposition: "attachment") if document.file.attached? %>
     </div>
-  </div>
+  <% end %>
 </div>
 
 <script>
   document.addEventListener('turbolinks:load', () => {
-  const simpleModal = new bootstrap.Modal(document.getElementById('simpleModal'), {});
-  document.querySelector('[data-toggle="modal"]').addEventListener('click', () => simpleModal.show());
-  document.querySelector('[data-dismiss="modal"]').addEventListener('click', () => simpleModal.hide());
-});
+    const simpleModalButton = document.querySelector('[data-target="#simpleModal"]');
+    const uploadFileModalButton = document.querySelector('[data-target="#uploadFileModal"]');
+    const simpleModal = document.getElementById('simpleModal');
+    const uploadFileModal = document.getElementById('uploadFileModal');
+    const simpleModalCloseButton = simpleModal.querySelector('[data-dismiss="modal"]');
+    const uploadFileModalCloseButton = uploadFileModal.querySelector('[data-dismiss="modal"]');
+
+    if (simpleModal && simpleModalButton) {
+      const simpleModalInstance = new bootstrap.Modal(simpleModal);
+      simpleModalButton.addEventListener('click', () => simpleModalInstance.show());
+      simpleModalCloseButton.addEventListener('click', () => simpleModalInstance.hide());
+    }
+
+    if (uploadFileModal && uploadFileModalButton) {
+      const uploadFileModalInstance = new bootstrap.Modal(uploadFileModal);
+      uploadFileModalButton.addEventListener('click', () => uploadFileModalInstance.show());
+      uploadFileModalCloseButton.addEventListener('click', () => uploadFileModalInstance.hide())
+    }
+  });
+
+
 </script>
