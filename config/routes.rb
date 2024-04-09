@@ -9,6 +9,6 @@ Rails.application.routes.draw do
   resources :users, only: [:index]
   resources :folders
   resources :folders do
-    resources :documents, only: [:create]
+    resources :documents, only: [:create, :destroy]
   end
 end

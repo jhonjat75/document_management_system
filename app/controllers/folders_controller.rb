@@ -25,9 +25,9 @@ class FoldersController < ApplicationController
 
   # POST /folders or /folders.json
   def create
-    authorize @folder
     @folder = Folder.new(folder_params)
     @folder.user_id = current_user.id
+    authorize @folder
 
     respond_to do |format|
       if @folder.save
