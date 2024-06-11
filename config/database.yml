@@ -13,6 +13,8 @@ development:
 test:
   <<: *default
   database: document_management_system_test
+  username: <%= ENV.fetch("POSTGRES_USER") %>
+  host: localhost
 
 production:
   <<: *default
