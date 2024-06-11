@@ -2,23 +2,20 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: <%= ENV.fetch("POSTGRES_USER") %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+  host: localhost
 
 development:
   <<: *default
   database: document_management_system_development
-  username: <%= ENV.fetch("POSTGRES_USER") %>
-  password: <%= ENV.fetch("DOCUMENT_MANAGEMENT_SYSTEM_DATABASE_PASSWORD") %>
-  host: localhost
+
 
 test:
   <<: *default
   database: document_management_system_test
-  username: <%= ENV.fetch("POSTGRES_USER") %>
-  host: localhost
+
 
 production:
   <<: *default
   database: document_management_system_production
-  username: <%= ENV.fetch("POSTGRES_USER") %>
-  password: <%= ENV.fetch("DOCUMENT_MANAGEMENT_SYSTEM_DATABASE_PASSWORD") %>
-  host: localhost
