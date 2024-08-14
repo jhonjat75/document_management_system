@@ -3,15 +3,19 @@
 class FoldersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_folder, only: %i[show edit update destroy]
-  before_action :authorize_folder, only: %i[show edit update destroy]
 
   # GET /folders or /folders.json
   def index
-    @folders = FolderService.parent_folders
+    @folders = FolderService.parent_folders(current_user)
+    @can_create_folder = current_user.admin? || current_user.user_profiles.exists?(can_create: true)
   end
 
   # GET /folders/1 or /folders/1.json
-  def show; end
+  def show
+    @can_create = can_create?
+    @can_edit = can_edit?
+    @can_delete = can_delete?
+  end
 
   # GET /folders/new
   def new
@@ -21,7 +25,7 @@ class FoldersController < ApplicationController
   # POST /folders or /folders.json
   def create
     @folder = build_folder
-    authorize @folder
+    @folder.profile_ids = parent_folder_profile_ids if @folder.parent_folder_id.present?
 
     if save_folder
       handle_successful_create
@@ -51,22 +55,24 @@ class FoldersController < ApplicationController
     @folder = FolderService.find(params[:id])
   end
 
-  def authorize_folder
-    authorize @folder
-  end
-
   def folder_params
-    params.require(:folder).permit(:name, :description, :parent_folder_id)
+    params.require(:folder).permit(:name, :description, :parent_folder_id, profile_ids: [])
   end
 
   def build_folder
     folder = FolderService.new_instance(folder_params)
+
     folder.user_id = current_user.id
     folder
   end
 
   def save_folder
     FolderService.new(@folder).save
+  end
+
+  def parent_folder_profile_ids
+    parent_folder = Folder.find(@folder.parent_folder_id)
+    parent_folder.profile_ids
   end
 
   def handle_successful_create
@@ -89,5 +95,17 @@ class FoldersController < ApplicationController
     else
       redirect_to folders_url, notice: 'Folder was successfully created.'
     end
+  end
+
+  def can_create?
+    current_user.admin? || current_user.user_profiles.where(profile_id: @folder.profile_ids).exists?(can_create: true)
+  end
+
+  def can_edit?
+    current_user.admin? || current_user.user_profiles.where(profile_id: @folder.profile_ids).exists?(can_update: true)
+  end
+
+  def can_delete?
+    current_user.admin? || current_user.user_profiles.where(profile_id: @folder.profile_ids).exists?(can_delete: true)
   end
 end

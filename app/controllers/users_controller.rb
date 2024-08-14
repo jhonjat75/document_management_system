@@ -3,23 +3,24 @@
 class UsersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_user, only: %i[show edit update destroy]
-  before_action :authorize_user, only: %i[show edit update destroy]
 
   def index
     @users = UserService.all_users
-    authorize @users
   end
 
   def show; end
 
+  def profiles
+    @user = User.find(params[:id])
+    @user_profiles = @user.user_profiles.includes(:profile)
+  end
+
   def new
     @user = UserService.new_user
-    authorize @user, :new?
   end
 
   def create
     @user = UserService.new_user(user_params)
-    authorize @user, :create?
     if UserService.new(@user).save
       redirect_to @user, notice: 'Usuario creado exitosamente.'
     else
@@ -46,10 +47,6 @@ class UsersController < ApplicationController
 
   def set_user
     @user = UserService.find(params[:id])
-  end
-
-  def authorize_user
-    authorize @user
   end
 
   def user_params

@@ -32,7 +32,26 @@ class FolderService
     folder
   end
 
-  def self.parent_folders
-    Folder.where(parent_folder_id: nil)
+  def self.parent_folders(user)
+    if user.admin?
+      folders = Folder.where(parent_folder_id: nil)
+      folders.map { |folder| { folder: folder, can_edit: true, can_delete: true } }
+    else
+      folders_with_read_permission(user)
+    end
+  end
+
+  def self.folders_with_read_permission(user)
+    profile_ids = user.user_profiles.where(can_read: true).pluck(:profile_id)
+
+    folders = Folder.joins(:folder_profiles)
+                    .where(parent_folder_id: nil, folder_profiles: { profile_id: profile_ids }).distinct
+    folders.map do |folder|
+      user_profile = UserProfile.find_by(user: user, profile: folder.profile_ids.first)
+      {
+        folder: folder, can_edit: user_profile&.can_update || false,
+        can_delete: user_profile&.can_delete || false
+      }
+    end
   end
 end

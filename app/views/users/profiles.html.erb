@@ -1,0 +1,87 @@
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header">
+      <h1>Perfiles de <%= @user.first_name %> <%= @user.last_name %></h1>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Perfil</th>
+            <th>Descripción</th>
+            <th>Crear</th>
+            <th>Leer</th>
+            <th>Actualizar</th>
+            <th>Eliminar</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @user_profiles.each do |user_profile| %>
+            <tr id="profile-<%= user_profile.id %>">
+              <td><%= user_profile.profile.name %></td>
+              <td><%= user_profile.profile.description %></td>
+              <td class="editable" data-id="<%= user_profile.id %>" data-field="can_create"><i class="fas <%= user_profile.can_create ? 'fa-check' : 'fa-times' %>"></i></td>
+              <td class="editable" data-id="<%= user_profile.id %>" data-field="can_read"><i class="fas <%= user_profile.can_read ? 'fa-check' : 'fa-times' %>"></i></td>
+              <td class="editable" data-id="<%= user_profile.id %>" data-field="can_update"><i class="fas <%= user_profile.can_update ? 'fa-check' : 'fa-times' %>"></i></td>
+              <td class="editable" data-id="<%= user_profile.id %>" data-field="can_delete"><i class="fas <%= user_profile.can_delete ? 'fa-check' : 'fa-times' %>"></i></td>
+              <td>
+                <button class="btn btn-primary edit-btn" data-id="<%= user_profile.id %>">Editar</button>
+                <button class="btn btn-success save-btn" data-id="<%= user_profile.id %>" style="display:none;">Guardar</button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <%= link_to 'Regresar', user_path(@user), class: 'btn btn-secondary' %>
+</div>
+
+<%= javascript_include_tag 'https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js' %>
+<script>
+  $(document).ready(function() {
+    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+    $('.edit-btn').click(function() {
+      var id = $(this).data('id');
+      $('#profile-' + id + ' .editable').each(function() {
+        var field = $(this).data('field');
+        var value = $(this).find('i').hasClass('fa-check');
+        $(this).html('<input type="checkbox" class="form-control" data-field="' + field + '"' + (value ? ' checked' : '') + '>');
+      });
+      $(this).hide();
+      $('.save-btn[data-id="' + id + '"]').show();
+    });
+
+    $('.save-btn').click(function() {
+      var id = $(this).data('id');
+      var data = {};
+      $('#profile-' + id + ' .editable input').each(function() {
+        var field = $(this).data('field');
+        var value = $(this).is(':checked');
+        data[field] = value;
+      });
+
+      $.ajax({
+        url: '/user_profiles/' + id,
+        method: 'PATCH',
+        data: { user_profile: data },
+        headers: {
+          'X-CSRF-Token': csrfToken
+        },
+        success: function(response) {
+          $('#profile-' + id + ' .editable').each(function() {
+            var field = $(this).data('field');
+            $(this).html('<i class="fas ' + (data[field] ? 'fa-check' : 'fa-times') + '"></i>');
+          });
+          $('.save-btn[data-id="' + id + '"]').hide();
+          $('.edit-btn[data-id="' + id + '"]').show();
+        },
+        error: function(xhr) {
+          alert('Error al guardar los cambios: ' + xhr.responseJSON.errors.join(', '));
+        }
+      });
+    });
+  });
+</script>

@@ -1,8 +1,7 @@
-<% if policy(@folder).create? %>
+<% if @can_create %>
 <button type="button" class="btn btn-primary btn-new" data-toggle="modal" data-target="#simpleModal">
   <i class="fa-solid fa-folder-plus"></i> Nueva Carpeta
 </button>
-<% end %>
 <div class="modal fade" id="simpleModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -32,11 +31,9 @@
   </div>
 </div>
 
-<% if policy(@folder).create? %>
 <button type="button" class="btn btn-success btn-new" data-toggle="modal" data-target="#uploadFileModal">
   <i class="fa-solid fa-cloud-arrow-up"></i> Nuevo Archivo
 </button>
-<% end %>
 <div class="modal fade" id="uploadFileModal" tabindex="-1" role="dialog" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -65,7 +62,7 @@
     </div>
   </div>
 </div>
-
+<% end %>
 
 <div class="card-container">
   <% @folder.subfolders.each do |folder| %>
@@ -85,21 +82,19 @@
       </div>
       <div class="card-footer">
         <div class="icon-container">
-          <% if policy(folder).show? %>
             <%= link_to folder_path(folder) do %>
               <i class="fas fa-eye text-primary mx-1"></i>
             <% end %>
-          <% end %>
-          <% if policy(folder).update? %>
-            <%= link_to edit_folder_path(folder) do %>
-              <i class="fas fa-edit text-warning mx-1"></i>
+            <% if @can_edit %>
+              <%= link_to edit_folder_path(folder) do %>
+                <i class="fas fa-edit color-warning mx-1"></i>
+              <% end %>
             <% end %>
-          <% end %>
-          <% if policy(folder).destroy? %>
-            <%= link_to folder, method: :delete, data: { confirm: '¿Estás seguro?' } do %>
-              <i class="fas fa-trash text-danger mx-1"></i>
+            <% if @can_delete %>
+              <%= link_to folder, method: :delete, data: { confirm: '¿Estás seguro?' } do %>
+                <i class="fas fa-trash color-danger mx-1"></i>
+              <% end %>
             <% end %>
-          <% end %>
         </div>
       </div>
     </div>
@@ -131,11 +126,9 @@
           <%= link_to rails_blob_path(document.file, disposition: "attachment"), class: "download-link" do %>
             <i class="fa fa-download text-primary mx-1"></i>
           <% end %>
-          <% if policy(@folder).destroy? %>
             <%= link_to folder_document_path(@folder, document), method: :delete, data: { confirm: '¿Estás seguro?' }, class: "delete-link" do %>
               <i class="fa fa-trash text-danger mx-1"></i>
             <% end %>
-          <% end %>
         </div>
       </div>
     </div>

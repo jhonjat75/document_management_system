@@ -26,7 +26,6 @@ gem 'jbuilder', '~> 2.7'
 
 gem 'devise'
 gem 'dotenv-rails'
-gem 'pundit'
 gem 'uglifier', '>= 1.3.0'
 
 # Use Active Storage variant
@@ -57,8 +56,8 @@ group :development do
 end
 
 group :test do
-  gem 'simplecov', require: false
   gem 'shoulda-matchers', '~> 4.0'
+  gem 'simplecov', require: false
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem

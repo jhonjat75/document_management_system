@@ -23,6 +23,10 @@
         <%= form.label :description %>
         <%= form.text_area :description, class: "form-control" %>
       </div>
+      <div class="form-group">
+        <%= form.label :profile_ids, "Departamento" %>
+        <%= form.collection_select :profile_ids, Profile.all, :id, :name, { prompt: "Seleccione un departamento" }, class: 'form-control', required: true %>
+      </div>
     </div>
     <div class="card-footer d-grid gap-2 d-flex justify-content-end">
       <%= form.submit class: "btn btn-primary" %>

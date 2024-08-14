@@ -1,2 +1,16 @@
 es:
-  hello: "Hola Mundo"
+  activerecord:
+    models:
+      user: "Usuario"
+      profile: "Perfil"
+    attributes:
+      user:
+        required: "es requerido"
+      profile:
+        required: "es requerido"
+    errors:
+      messages:
+        required: "es requerido"
+  errors:
+    messages:
+      required: "es requerido"

@@ -149,8 +149,6 @@ GEM
     public_suffix (5.0.5)
     puma (4.3.12)
       nio4r (~> 2.0)
-    pundit (2.3.2)
-      activesupport (>= 3.0.0)
     racc (1.8.0)
     rack (2.2.9)
     rack-mini-profiler (2.3.4)
@@ -320,7 +318,6 @@ DEPENDENCIES
   listen (~> 3.2)
   pg (>= 0.18, < 2.0)
   puma (~> 4.1)
-  pundit
   rack-mini-profiler (~> 2.0)
   rails (~> 6.0.6, >= 6.0.6.1)
   rspec-rails (~> 5.0.0)

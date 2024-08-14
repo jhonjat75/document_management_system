@@ -8,12 +8,20 @@
         </p>
       </a>
     </li>
-    <% if policy(User).index? %>
+    <% if current_user.admin? %>
     <li class="nav-item">
       <a href="<%= users_path %>" class="nav-link">
         <i class="nav-icon fas fa-users"></i>
         <p>
           Usuarios
+        </p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="<%= profiles_path %>" class="nav-link">
+        <i class="nav-icon fa-solid fa-id-card"></i>
+        <p>
+          Perfiles
         </p>
       </a>
     </li>

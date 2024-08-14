@@ -7,9 +7,25 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
   validates :first_name, :last_name, presence: true
   validates :email, uniqueness: true
+  has_many :user_profiles
+  has_many :profiles, through: :user_profiles
+  after_create :assign_default_profiles
 
-  enum role: { super_admin: 0, admin: 1, driver: 2 }
+  enum role: { admin: 1, general: 2 }
   def fullname
     "#{first_name} #{last_name}"
+  end
+
+  def assign_default_profiles
+    Profile.find_each do |profile|
+      UserProfile.create(
+        user: self,
+        profile: profile,
+        can_create: false,
+        can_read: false,
+        can_update: false,
+        can_delete: false
+      )
+    end
   end
 end
