@@ -10,6 +10,13 @@ class Profile < ApplicationRecord
 
   private
 
+  def assign_to_all_users
+    User.find_each do |user|
+      UserProfile.create(user: user, profile: self, can_create: false, can_read: false, can_update: false,
+                         can_delete: false)
+    end
+  end
+
   def update_subfolders_profiles
     return unless saved_change_to_profiles?
 
