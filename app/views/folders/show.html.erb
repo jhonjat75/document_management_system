@@ -76,7 +76,11 @@
           <span class="badge badge-pill badge-custom document-count"><%= folder.subfolders.count %> <i class="fas fa-folder"></i> <%= folder.documents.count %> <i class="fa-solid fa-file-lines"></i></span>
           <span class="badge badge-pill badge-custom">
             <i class="fa-regular fa-user"></i>
-            <span><%= folder.user.fullname %></span>
+            <% if folder.profiles.present? %>
+            <span><%= folder.profiles.last.name %></span>
+            <% else %>
+              <span>Sin perfiles</span>
+            <% end %>
           </span>
         </div>
       </div>

@@ -43,9 +43,9 @@ class FolderService
 
   def self.folders_with_read_permission(user)
     profile_ids = user.user_profiles.where(can_read: true).pluck(:profile_id)
-
     folders = Folder.joins(:folder_profiles)
                     .where(parent_folder_id: nil, folder_profiles: { profile_id: profile_ids }).distinct
+
     folders.map do |folder|
       user_profile = UserProfile.find_by(user: user, profile: folder.profile_ids.first)
       {

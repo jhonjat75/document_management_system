@@ -36,6 +36,7 @@ class FoldersController < ApplicationController
 
   # PATCH/PUT /folders/1 or /folders/1.json
   def update
+    puts "folder_params: #{folder_params.inspect}"
     if FolderService.new(@folder).update(folder_params)
       redirect_after_create_or_update
     else

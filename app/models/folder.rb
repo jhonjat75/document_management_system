@@ -10,4 +10,13 @@ class Folder < ApplicationRecord
   has_many :profiles, through: :folder_profiles
 
   accepts_nested_attributes_for :folder_profiles, allow_destroy: true
+  after_update :update_subfolders_profiles
+
+  private
+
+  def update_subfolders_profiles
+    subfolders.each do |subfolder|
+      subfolder.update(profile_ids: profile_ids)
+    end
+  end
 end

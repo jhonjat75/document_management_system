@@ -19,7 +19,11 @@
         <span class="badge badge-pill badge-custom document-count"><%= folder.subfolders.count %> <i class="fas fa-folder"></i> <%= folder.documents.count %> <i class="fa-solid fa-file-lines"></i></span>
         <span class="badge badge-pill badge-custom">
           <i class="fa-regular fa-user"></i>
-          <span><%= folder.user.fullname %></span>
+          <% if folder.profiles.present? %>
+            <span><%= folder.profiles.last.name %></span>
+          <% else %>
+            <span>Sin perfiles</span>
+          <% end %>
         </span>
       </div>
       </div>
@@ -66,7 +70,7 @@
           </div>
           <div class="form-group">
             <%= form.label :profile_ids, "Departamento" %>
-            <%= form.collection_select :profile_ids, Profile.all, :id, :name, { prompt: "Seleccione un departamento" }, class: 'form-control', required: true %>
+            <%= form.collection_select :profile_ids, Profile.all, :id, :name, { prompt: "Seleccione un departamento" }, { class: 'form-control', required: true, multiple: true } %>
           </div>
           <div class="form-group d-grid gap-2 d-flex justify-content-end">
             <%= form.submit 'Crear', class: 'btn btn-primary' %>
