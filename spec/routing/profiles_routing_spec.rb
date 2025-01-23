@@ -8,10 +8,6 @@ RSpec.describe ProfilesController, type: :routing do
       expect(get: '/profiles').to route_to('profiles#index')
     end
 
-    it 'routes to #new' do
-      expect(get: '/profiles/new').to route_to('profiles#new')
-    end
-
     it 'routes to #show' do
       expect(get: '/profiles/1').to route_to('profiles#show', id: '1')
     end

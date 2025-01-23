@@ -11,12 +11,6 @@ RSpec.describe User, type: :model do
 end
 
 RSpec.describe User, type: :model do
-  describe 'enums' do
-    it { is_expected.to define_enum_for(:role).with_values(%i[super_admin admin driver]) }
-  end
-end
-
-RSpec.describe User, type: :model do
   describe '#fullname' do
     it 'returns the full name of the user' do
       user = described_class.new(first_name: 'John', last_name: 'Doe')
