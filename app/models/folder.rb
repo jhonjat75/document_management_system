@@ -6,7 +6,7 @@ class Folder < ApplicationRecord
   belongs_to :parent_folder, class_name: 'Folder', optional: true
   has_many :documents, dependent: :destroy
 
-  has_many :folder_profiles
+  has_many :folder_profiles, dependent: :destroy
   has_many :profiles, through: :folder_profiles
 
   accepts_nested_attributes_for :folder_profiles, allow_destroy: true
