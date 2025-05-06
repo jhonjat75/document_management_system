@@ -45,8 +45,14 @@ class FoldersController < ApplicationController
 
   # DELETE /folders/1 or /folders/1.json
   def destroy
+    parent_id = @folder.parent_folder_id
     FolderService.new(@folder).destroy
-    redirect_to folders_url, notice: 'Folder was successfully destroyed.'
+
+    if parent_id.present?
+      redirect_to folder_path(parent_id), notice: 'Subcarpeta eliminada correctamente.'
+    else
+      redirect_to folders_url, notice: 'Carpeta eliminada correctamente.'
+    end
   end
 
   private

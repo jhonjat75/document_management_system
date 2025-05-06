@@ -37,7 +37,7 @@
               <i class="fas fa-edit color-edit mx-1"></i>
             <% end %>
           <% end %>
-          <% if can_delete %>
+          <% if can_delete && folder.subfolders.empty? && folder.documents.empty? %>
             <%= link_to folder, method: :delete, data: { confirm: '¿Estás seguro?' } do %>
               <i class="fas fa-trash color-delete mx-1"></i>
             <% end %>
