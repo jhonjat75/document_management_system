@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_08_14_023242) do
+ActiveRecord::Schema.define(version: 2025_06_04_163202) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -44,6 +44,8 @@ ActiveRecord::Schema.define(version: 2024_08_14_023242) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name"
+    t.string "google_file_id"
+    t.string "content_type"
     t.index ["folder_id"], name: "index_documents_on_folder_id"
   end
 

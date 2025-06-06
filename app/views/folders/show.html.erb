@@ -51,8 +51,8 @@
           </div>
 
           <div class="form-group">
-            <%= form.label :file, 'Seleccionar archivo' %>
-            <%= form.file_field :file, required: true, direct_upload: true, class: 'form-control-file' %>
+            <%= form.label :upload, 'Seleccionar archivo' %>
+            <%= form.file_field :upload, required: true, class: 'form-control-file' %>
           </div>
           <div class="form-group d-grid gap-2 d-flex justify-content-end">
             <%= form.submit 'Subir Archivo', class: 'btn btn-primary' %>
@@ -112,31 +112,45 @@
       <div class="card-header card-header-custom">
         <h5 class="card-title"><%= document.name %></h5>
       </div>
+
       <div class="card-body">
-        <% if document.file.attached? %>
-          <% if document.file.content_type == 'application/pdf' %>
+        <% if document.google_file_id.present? &&
+              GOOGLE_DRIVE_PREVIEWABLE_TYPES.include?(document.content_type) %>
           <div class="pdf-container">
-            <iframe src="<%= rails_blob_path(document.file, disposition: "inline") %>#zoom=60&toolbar=0" class="pdf-preview"></iframe>
+            <iframe
+              src="https://drive.google.com/file/d/<%= document.google_file_id %>/preview"
+              class="pdf-preview"
+              width="100%" height="400px"
+              allow="autoplay"></iframe>
           </div>
-          <% else %>
-            <%= image_tag 'no-image.png', class: "no-preview-img" %>
-          <% end %>
+        <% else %>
+          <%= image_tag 'no-image.png', class: 'no-preview-img' %>
         <% end %>
       </div>
+
       <div class="card-footer">
-        <div class="folder_user">
-        </div>
         <div class="icon-container">
-          <%= link_to rails_blob_path(document.file, disposition: "attachment"), class: "download-link" do %>
-            <i class="fa fa-download text-primary mx-1"></i>
+          <% if document.google_file_id.present? %>
+            <%= link_to "https://drive.google.com/uc?id=#{document.google_file_id}&export=download",
+                        class: "download-link", target: "_blank" do %>
+              <i class="fa fa-download text-primary mx-1"></i>
+            <% end %>
           <% end %>
-            <%= link_to folder_document_path(@folder, document), method: :delete, data: { confirm: '¿Estás seguro?' }, class: "delete-link" do %>
+
+          <% if @can_delete %>
+            <%= link_to folder_document_path(@folder, document),
+                        method: :delete,
+                        data: { confirm: '¿Estás seguro?' },
+                        class: "delete-link" do %>
               <i class="fa fa-trash text-danger mx-1"></i>
             <% end %>
+          <% end %>
         </div>
       </div>
     </div>
   <% end %>
+
+
 </div>
 
 <script>

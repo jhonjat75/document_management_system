@@ -16,6 +16,24 @@ class User < ApplicationRecord
     "#{first_name} #{last_name}"
   end
 
+  def can_update_folder?(folder)
+    return true if role == 'admin'
+
+    permission_on_folder?(folder, :can_update)
+  end
+
+  def can_create_folder?(folder)
+    return true if role == 'admin'
+
+    permission_on_folder?(folder, :can_create)
+  end
+
+  def can_delete_folder?(folder)
+    return true if role == 'admin'
+
+    permission_on_folder?(folder, :can_delete)
+  end
+
   def assign_default_profiles
     Profile.find_each do |profile|
       UserProfile.create(
@@ -27,5 +45,13 @@ class User < ApplicationRecord
         can_delete: false
       )
     end
+  end
+
+  private
+
+  def permission_on_folder?(folder, permission)
+    profile_ids = user_profiles.where(permission => true).pluck(:profile_id)
+    folder_profile_ids = folder.folder_profiles.pluck(:profile_id)
+    (profile_ids & folder_profile_ids).any?
   end
 end
