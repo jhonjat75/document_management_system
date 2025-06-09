@@ -11,7 +11,7 @@ class User < ApplicationRecord
   has_many :profiles, through: :user_profiles
   after_create :assign_default_profiles
 
-  enum role: { admin: 1, general: 2 }
+  enum role: { general: 2, admin: 1 }
   def fullname
     "#{first_name} #{last_name}"
   end

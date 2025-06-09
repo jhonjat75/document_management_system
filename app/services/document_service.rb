@@ -1,7 +1,15 @@
 # frozen_string_literal: true
 
 class DocumentService
-  def initialize(document = nil)
+  def self.find(id)
+    Document.find(id)
+  end
+
+  def self.build(params)
+    Document.new(params)
+  end
+
+  def initialize(document)
     @document = document
   end
 
@@ -11,13 +19,5 @@ class DocumentService
 
   def destroy
     @document.destroy
-  end
-
-  def self.find(id)
-    Document.find(id)
-  end
-
-  def self.new_document(attributes = {})
-    Document.new(attributes)
   end
 end
