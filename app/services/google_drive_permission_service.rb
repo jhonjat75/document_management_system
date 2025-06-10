@@ -14,4 +14,14 @@ class GoogleDrivePermissionService
     )
     @drive.send(:create_permission, @document.google_file_id, permission)
   end
+
+  def revoke_edit_access(email)
+    permission = Google::Apis::DriveV3::Permission.new(
+      type: 'user',
+      role: 'reader',
+      email_address: email
+    )
+
+    @drive.send(:create_permission, @document.google_file_id, permission)
+  end
 end

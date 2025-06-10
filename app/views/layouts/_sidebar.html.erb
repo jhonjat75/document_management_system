@@ -25,6 +25,12 @@
         </p>
       </a>
     </li>
+    <li class="nav-item">
+      <a href="<%= edit_requests_path %>" class="nav-link">
+        <i class="nav-icon fas fa-edit"></i>
+        <p>Solicitudes de Edición</p>
+      </a>
+    </li>
     <% end %>
     <li class="nav-item logout-link">
       <%= link_to destroy_user_session_path, method: :delete, class: 'nav-link' do %>

@@ -6,6 +6,7 @@ class FoldersController < ApplicationController
 
   # GET /folders or /folders.json
   def index
+    ExpireEditRequestsService.call
     @folders = FolderService.parent_folders(current_user)
     @can_create_folder = current_user.admin? || current_user.user_profiles.exists?(can_create: true)
   end
