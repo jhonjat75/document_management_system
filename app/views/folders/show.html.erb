@@ -108,20 +108,21 @@
 <hr size="2px" color="black" />
 <div class="card-container">
   <% @folder.documents.each do |document| %>
-    <div class="card card-custom">
+    <div class="card card-custom-doc">
       <div class="card-header card-header-custom">
         <h5 class="card-title"><%= document.name %></h5>
+        <small class="text-muted"><%= document.file_extension.upcase %></small>
       </div>
 
       <div class="card-body">
-        <% if document.google_file_id.present? &&
-              GOOGLE_DRIVE_PREVIEWABLE_TYPES.include?(document.content_type) %>
+        <% if document.google_file_id.present? && GOOGLE_DRIVE_PREVIEWABLE_TYPES.include?(document.content_type) %>
           <div class="pdf-container">
             <iframe
               src="https://drive.google.com/file/d/<%= document.google_file_id %>/preview"
               class="pdf-preview"
               width="100%" height="400px"
-              allow="autoplay"></iframe>
+              allow="autoplay">
+            </iframe>
           </div>
         <% else %>
           <%= image_tag 'no-image.png', class: 'no-preview-img' %>
@@ -130,10 +131,9 @@
 
       <div class="card-footer">
         <div class="icon-container">
-          <% if document.google_file_id.present? %>
-            <%= link_to "https://drive.google.com/uc?id=#{document.google_file_id}&export=download",
-                        class: "download-link", target: "_blank" do %>
-              <i class="fa fa-download text-primary mx-1"></i>
+          <% if @can_edit && document.google_file_id.present? && GOOGLE_DRIVE_EDITABLE_TYPES.include?(document.content_type) %>
+            <%= link_to new_folder_document_edit_request_path(@folder, document), class: 'edit-icon' do %>
+              <i class="fa fa-edit"></i>
             <% end %>
           <% end %>
 
@@ -149,9 +149,38 @@
       </div>
     </div>
   <% end %>
-
-
 </div>
+
+<style>
+
+.card-custom-doc {
+  margin-right: 20px;
+  margin-left: 20px;
+  max-width: 30%;
+}
+
+@media (max-width: 576px) {
+  .card-custom-doc {
+    max-width: 100%;
+  }
+}
+
+.img-preview, .no-preview-img {
+  width: 100%;
+  height: auto;
+}
+
+
+.edit-icon {
+  color: #007bff;
+  font-size: 1.2em;
+}
+
+.delete-link {
+  font-size: 1.2em;
+}
+</style>
+
 
 <script>
   document.addEventListener('turbolinks:load', () => {
@@ -177,34 +206,3 @@
 
 
 </script>
-
-<style>
-  .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .card-custom {
-    width: calc(33.333% - 10px);
-    box-sizing: border-box;
-  }
-  .img-preview, .no-preview-img {
-    width: 100%;
-    height: auto;
-  }
-  .pdf-container {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%;
-    height: 0;
-    overflow: hidden;
-  }
-  .pdf-preview {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
-</style>

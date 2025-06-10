@@ -1,21 +1,29 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  resources :folders do
+    resources :documents, only: [:create, :destroy] do
+      resources :edit_requests, only: [:new, :create]
+    end
+  end
+
   resources :profiles
   resources :user_profiles
-  get 'users/index'
+
   devise_for :users, controllers: {
     sessions: 'users/sessions'
   }
-  get 'profiles',                 to: 'users#profiles'
-  root to: "folders#index"
+
   resources :users do
+    collection do
+      get 'index', to: 'users#index'
+    end
+
     member do
       get 'profiles'
     end
   end
-  resources :folders
-  resources :folders do
-    resources :documents, only: [:create, :destroy]
-  end
+
+  get 'profiles', to: 'users#profiles'
+  root to: 'folders#index'
 end

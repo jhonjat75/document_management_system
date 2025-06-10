@@ -45,4 +45,8 @@ class GoogleDriveService
       parents: [folder_id]
     }
   end
+
+  def create_permission(file_id, permission)
+    @drive_service.create_permission(file_id, permission)
+  end
 end

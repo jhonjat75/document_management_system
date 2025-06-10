@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_06_04_163202) do
+ActiveRecord::Schema.define(version: 2025_06_10_140922) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -47,6 +47,17 @@ ActiveRecord::Schema.define(version: 2025_06_04_163202) do
     t.string "google_file_id"
     t.string "content_type"
     t.index ["folder_id"], name: "index_documents_on_folder_id"
+  end
+
+  create_table "edit_requests", force: :cascade do |t|
+    t.text "reason"
+    t.string "status", default: "pending"
+    t.bigint "user_id", null: false
+    t.bigint "document_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["document_id"], name: "index_edit_requests_on_document_id"
+    t.index ["user_id"], name: "index_edit_requests_on_user_id"
   end
 
   create_table "folder_profiles", force: :cascade do |t|
@@ -111,6 +122,8 @@ ActiveRecord::Schema.define(version: 2025_06_04_163202) do
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "edit_requests", "documents"
+  add_foreign_key "edit_requests", "users"
   add_foreign_key "folder_profiles", "folders"
   add_foreign_key "folder_profiles", "profiles"
   add_foreign_key "user_profiles", "profiles"

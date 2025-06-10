@@ -1,0 +1,27 @@
+<div class="container mt-5">
+  <div class="card shadow-sm rounded">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Justificación para editar el documento</h5>
+    </div>
+    
+    <div class="card-body">
+      <p class="text-muted mb-4">
+        Por favor, describe brevemente el motivo por el cual necesitas realizar cambios en este documento.
+      </p>
+
+      <%= form_with model: @request, url: folder_document_edit_requests_path(@folder, @document), local: true do |f| %>
+        <div class="mb-3">
+          <%= f.label :reason, "Motivo del cambio", class: "form-label" %>
+          <%= f.text_area :reason, rows: 5, class: "form-control", placeholder: "Ej. El archivo tiene información desactualizada que debo corregir..." %>
+        </div>
+
+        <%= f.hidden_field :document_id, value: @document.id %>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <%= link_to "Cancelar", folder_path(@folder), class: "btn btn-outline-secondary" %>
+          <%= f.submit "Confirmar edición", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
