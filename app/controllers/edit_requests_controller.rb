@@ -26,6 +26,12 @@ class EditRequestsController < ApplicationController
     end
   end
 
+  def destroy
+    @request = EditRequest.find(params[:id])
+    @request.destroy
+    redirect_to edit_requests_path, notice: 'Solicitud eliminada correctamente.'
+  end
+
   private
 
   def set_document

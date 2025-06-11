@@ -15,14 +15,10 @@ class DocumentsController < ApplicationController
   end
 
   def destroy
-    unless current_user.can_delete_folder?(@folder)
-      redirect_to folder_path(@folder), alert: 'No tienes permiso para eliminar archivos.'
-      return
-    end
+    return deny_access unless current_user.can_delete_folder?(@folder)
+    return block_if_edit_requests if @document.edit_requests.any?
 
-    GoogleDriveService.new.delete_file(@document.google_file_id) if @document.google_file_id.present?
-    DocumentService.new(@document).destroy
-
+    delete_document_and_file
     redirect_to folder_path(@folder), notice: 'Documento eliminado con éxito.'
   end
 
@@ -66,5 +62,19 @@ class DocumentsController < ApplicationController
 
   def render_upload_error
     render 'folders/show', status: :unprocessable_entity
+  end
+
+  def deny_access
+    redirect_to folder_path(@folder), alert: 'No tienes permiso para eliminar archivos.'
+  end
+
+  def block_if_edit_requests
+    redirect_to folder_path(@folder),
+                alert: 'No se puede eliminar el documento porque tiene solicitudes de edición asociadas.'
+  end
+
+  def delete_document_and_file
+    GoogleDriveService.new.delete_file(@document.google_file_id) if @document.google_file_id.present?
+    DocumentService.new(@document).destroy
   end
 end

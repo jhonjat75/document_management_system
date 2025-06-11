@@ -1,19 +1,42 @@
+# config/locales/es.yml
+
 es:
   activerecord:
+    # EN ACTIVERECORD SOLO DEJAMOS NOMBRES DE MODELOS Y ATRIBUTOS
     models:
       user: "Usuario"
       profile: "Perfil"
     attributes:
       user:
         required: "es requerido"
+        email: "Correo electrónico"
+        password: "Contraseña"
+        password_confirmation: "Confirmación de contraseña"
+        first_name: "Nombre"
+        last_name: "Apellido"
       profile:
         required: "es requerido"
-    errors:
-      messages:
-        required: "es requerido"
+
   errors:
+    # AQUÍ VAN TODOS LOS MENSAJES Y PLANTILLAS DE ERROR
+    format: "%{attribute} %{message}"
+    unavailable_session: "La sesión no está disponible o ha expirado."
+
+    # La plantilla ahora está junto a los mensajes
+    template:
+      header:
+        one: "1 error prohibió que este %{model} se guardara:"
+        other: "Estas validaciones prohibieron que este %{model} se guardara:"
+      body: "Se encontraron los siguientes errores:"
+
+    # Los mensajes ahora están en la sección correcta
     messages:
       required: "es requerido"
+      confirmation: "no coincide con la confirmación"
+      too_short:
+        one: "es demasiado corto (mínimo 1 carácter)"
+        other: "es demasiado corto (mínimo %{count} caracteres)"
+
   devise:
     sessions:
       signed_in: "Inicio de sesión exitoso"

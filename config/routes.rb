@@ -6,7 +6,7 @@ Rails.application.routes.draw do
       resources :edit_requests, only: [:new, :create]
     end
   end
-  resources :edit_requests, only: [:index]
+  resources :edit_requests, only: [:index, :destroy]
 
   resources :profiles
   resources :user_profiles

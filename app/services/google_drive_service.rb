@@ -27,6 +27,10 @@ class GoogleDriveService
     uploaded_file.id
   end
 
+  def delete_file(file_id)
+    @drive_service.delete_file(file_id)
+  end
+
   def share_publicly(file_id)
     permission = Google::Apis::DriveV3::Permission.new(
       type: 'anyone',

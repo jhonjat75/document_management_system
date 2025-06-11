@@ -7,6 +7,7 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
   validates :first_name, :last_name, presence: true
   validates :email, uniqueness: true
+  validates :password, length: { minimum: 6 }
   has_many :user_profiles
   has_many :profiles, through: :user_profiles
   after_create :assign_default_profiles
