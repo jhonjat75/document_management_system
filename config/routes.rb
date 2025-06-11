@@ -16,10 +16,6 @@ Rails.application.routes.draw do
   }
 
   resources :users do
-    collection do
-      get 'index', to: 'users#index'
-    end
-
     member do
       get 'profiles'
     end
