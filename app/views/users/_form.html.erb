@@ -1,7 +1,8 @@
 <%= form_with(model: user, local: true) do |form| %>
   <% if user.errors.any? %>
     <div id="error_explanation" class="alert alert-danger">
-      <h2><%= pluralize(user.errors.count, "error") %> errores prohibieron que este usuario se guardara:</h2>
+      <h2><%= t("errors.template.header.#{user.errors.count == 1 ? 'one' : 'other'}", model: user.model_name.human.downcase) %></h2>
+
       <ul>
         <% user.errors.full_messages.each do |message| %>
           <li><%= message %></li>
