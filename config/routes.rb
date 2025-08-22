@@ -6,6 +6,12 @@ Rails.application.routes.draw do
       resources :edit_requests, only: [:new, :create]
     end
   end
+  
+  resources :documents, only: [:index, :show, :new, :edit, :update, :destroy] do
+    collection do
+      get :search
+    end
+  end
   resources :edit_requests, only: [:index, :destroy]
 
   resources :profiles

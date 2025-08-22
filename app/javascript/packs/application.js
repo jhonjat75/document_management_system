@@ -16,3 +16,4 @@ window.bootstrap = bootstrap;
 
 import "../stylesheets/custom_styles.css";
 import "../stylesheets/login.css";
+import "./folders.js";
