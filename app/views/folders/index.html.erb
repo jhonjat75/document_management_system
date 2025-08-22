@@ -1,12 +1,10 @@
 <style>
-/* Estilos para el index de carpetas */
 .folders-container {
   padding: 2rem;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
 }
 
-/* Header Section */
 .folders-header {
   display: flex;
   justify-content: space-between;
@@ -95,7 +93,6 @@
     transform: scale(1.1);
   }
 
-  /* File Search Section */
   .file-search-section {
     background: white;
     border-radius: 16px;
@@ -367,7 +364,6 @@
   font-size: 1.1rem;
 }
 
-/* Profile Filter Section */
 .profile-filter-section {
   background: white;
   border-radius: 16px;
@@ -459,7 +455,6 @@
   font-weight: 600;
 }
 
-/* Folders Grid */
 .folders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -702,7 +697,6 @@
   font-weight: 500;
 }
 
-/* Folder Content */
 .folder-content {
   padding: 2rem;
   background: white;
@@ -858,7 +852,6 @@
   letter-spacing: 0.05em;
 }
 
-/* Folder Footer */
 .folder-footer {
   padding: 2rem;
   border-top: 1px solid rgba(241, 245, 249, 0.8);
@@ -937,7 +930,6 @@
   text-decoration: none;
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -992,7 +984,6 @@
   box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4);
 }
 
-/* Modal Styles */
 .modal-content {
   border-radius: 16px;
   border: none;
@@ -1108,7 +1099,6 @@
   border-top: 1px solid #e2e8f0;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .folders-container {
     padding: 1rem;
@@ -1570,24 +1560,85 @@ Permisos: <%= user_permissions ? "#{user_permissions[:can_create] ? 'Crear' : ''
 </div>
 
 <script>
-// Funcionalidad JavaScript simplificada
-document.addEventListener('DOMContentLoaded', function() {
-  initializeFolderFunctionality();
-});
+if (typeof window.globalSearchTimeout === 'undefined') {
+  window.globalSearchTimeout = null;
+}
+if (typeof window.globalSelectedIndex === 'undefined') {
+  window.globalSelectedIndex = -1;
+}
+
+document.addEventListener('DOMContentLoaded', initializeFolderFunctionality);
+document.addEventListener('turbolinks:load', initializeFolderFunctionality);
+document.addEventListener('turbolinks:render', initializeFolderFunctionality);
 
 function initializeFolderFunctionality() {
-  initializeProfileFilters();
-  initializeActionMenus();
-  initializeCreateModal();
-  initializeFileSearch();
-  setupClickOutsideHandlers();
+  const mainContainer = document.querySelector('.folders-container');
+  if (!mainContainer) {
+    return;
+  }
+  
+  try {
+    cleanupExistingEventListeners();
+    initializeProfileFilters();
+    initializeActionMenus();
+    initializeCreateModal();
+    initializeFileSearch();
+    setupClickOutsideHandlers();
+  } catch (error) {
+    console.error('Error durante la inicialización:', error);
+  }
+}
+
+function cleanupExistingEventListeners() {
+  clearTimeout(window.globalSearchTimeout);
+  window.globalSelectedIndex = -1;
+  
+  const searchInput = document.getElementById('fileSearchInput');
+  if (searchInput) {
+    const newSearchInput = searchInput.cloneNode(true);
+    newSearchInput.value = '';
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+  }
+  
+  const searchClearBtn = document.getElementById('searchClearBtn');
+  if (searchClearBtn) {
+    const newClearBtn = searchClearBtn.cloneNode(true);
+    newClearBtn.style.display = 'none';
+    searchClearBtn.parentNode.replaceChild(newClearBtn, searchClearBtn);
+  }
+  
+  const searchResults = document.getElementById('searchResults');
+  if (searchResults) {
+    searchResults.style.display = 'none';
+  }
+  
+  const searchFilters = document.querySelectorAll('#searchInCurrentProfiles, #searchInSubfolders');
+  searchFilters.forEach(filter => {
+    if (filter) {
+      const newFilter = filter.cloneNode(true);
+      filter.parentNode.replaceChild(newFilter, filter);
+    }
+  });
 }
 
 function initializeProfileFilters() {
   const filterChips = document.querySelectorAll('.filter-chip');
   const folders = document.querySelectorAll('.folder-card');
+  const filters = document.getElementById('profileFilters');
+  const toggleBtn = document.querySelector('.btn-toggle-filters i');
   
-  if (filterChips.length === 0) return;
+  if (filterChips.length === 0 || folders.length === 0) return;
+  
+  // Asegurar estado inicial correcto
+  if (filters && toggleBtn) {
+    filters.style.display = 'block';
+    toggleBtn.className = 'fas fa-chevron-down';
+    
+    toggleBtn.parentElement.addEventListener('click', function(e) {
+      e.preventDefault();
+      toggleProfileFilters();
+    });
+  }
   
   filterChips.forEach(chip => {
     chip.addEventListener('click', () => {
@@ -1661,40 +1712,39 @@ function toggleProfileFilters() {
   const filters = document.getElementById('profileFilters');
   const toggleBtn = document.querySelector('.btn-toggle-filters i');
   
-  if (filters.style.display === 'none' || filters.style.display === '') {
-    filters.style.display = 'block';
-    toggleBtn.className = 'fas fa-chevron-up';
-  } else {
+  if (!filters || !toggleBtn) {
+    console.warn('Elementos del filtro no encontrados');
+    return;
+  }
+  
+  const isVisible = filters.style.display !== 'none' && filters.style.display !== '';
+  
+  if (isVisible) {
     filters.style.display = 'none';
     toggleBtn.className = 'fas fa-chevron-down';
+  } else {
+    filters.style.display = 'block';
+    toggleBtn.className = 'fas fa-chevron-up';
   }
 }
 
 function setupClickOutsideHandlers() {
   document.addEventListener('click', (e) => {
+    const mainContainer = document.querySelector('.folders-container');
+    if (!mainContainer) return;
+    
     if (!e.target.closest('.action-dropdown')) {
       document.querySelectorAll('.actions-menu').forEach(menu => {
         menu.classList.remove('show');
       });
     }
     
-    if (!e.target.closest('.profile-filter-section')) {
-      const filters = document.getElementById('profileFilters');
-      const toggleBtn = document.querySelector('.btn-toggle-filters i');
-      if (filters && toggleBtn) {
-        filters.style.display = 'none';
-        toggleBtn.className = 'fas fa-chevron-down';
-      }
-    }
-    
-    // Cerrar resultados de búsqueda al hacer clic fuera
     if (!e.target.closest('.search-container')) {
       closeSearchResults();
     }
   });
 }
 
-// Funcionalidad del buscador de archivos
 function initializeFileSearch() {
   const searchInput = document.getElementById('fileSearchInput');
   const searchResults = document.getElementById('searchResults');
@@ -1703,51 +1753,49 @@ function initializeFileSearch() {
   const searchInProfiles = document.getElementById('searchInCurrentProfiles');
   const searchInSubfolders = document.getElementById('searchInSubfolders');
   
-  let searchTimeout;
-  let selectedIndex = -1;
+  if (!searchInput || !searchResults || !searchResultsList || !searchClearBtn) {
+    return;
+  }
   
-  // Evento de escritura en el input
+  clearTimeout(window.globalSearchTimeout);
+  window.globalSelectedIndex = -1;
+  
   searchInput.addEventListener('input', function() {
     const query = this.value.trim();
     
-    // Mostrar/ocultar botón de limpiar
     searchClearBtn.style.display = query ? 'block' : 'none';
     
-    // Limpiar timeout anterior
-    clearTimeout(searchTimeout);
+    clearTimeout(window.globalSearchTimeout);
     
     if (query.length < 2) {
       closeSearchResults();
       return;
     }
     
-    // Debounce de búsqueda
-    searchTimeout = setTimeout(() => {
+    window.globalSearchTimeout = setTimeout(() => {
       performSearch(query);
     }, 300);
   });
   
-  // Evento de teclas
   searchInput.addEventListener('keydown', function(e) {
     const results = searchResultsList.querySelectorAll('.search-result-item');
     
     switch(e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        selectedIndex = Math.min(selectedIndex + 1, results.length - 1);
+        window.globalSelectedIndex = Math.min(window.globalSelectedIndex + 1, results.length - 1);
         updateSelection(results);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        selectedIndex = Math.max(selectedIndex - 1, -1);
+        window.globalSelectedIndex = Math.max(window.globalSelectedIndex - 1, -1);
         updateSelection(results);
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && results[selectedIndex]) {
-          navigateToFolder(results[selectedIndex].dataset.folderId);
+        if (window.globalSelectedIndex >= 0 && results[window.globalSelectedIndex]) {
+          navigateToFolder(results[window.globalSelectedIndex].dataset.folderId);
         } else if (searchResults.style.display !== 'none') {
-          // Si hay resultados visibles, ir al primero
           const firstResult = results[0];
           if (firstResult) {
             navigateToFolder(firstResult.dataset.folderId);
@@ -1761,7 +1809,6 @@ function initializeFileSearch() {
     }
   });
   
-  // Botón de limpiar
   searchClearBtn.addEventListener('click', function() {
     searchInput.value = '';
     searchInput.focus();
@@ -1769,7 +1816,6 @@ function initializeFileSearch() {
     this.style.display = 'none';
   });
   
-  // Filtros de búsqueda
   [searchInProfiles, searchInSubfolders].forEach(checkbox => {
     checkbox.addEventListener('change', function() {
       if (searchInput.value.trim().length >= 2) {
@@ -1781,7 +1827,7 @@ function initializeFileSearch() {
 
 function updateSelection(results) {
   results.forEach((item, index) => {
-    if (index === selectedIndex) {
+    if (index === window.globalSelectedIndex) {
       item.classList.add('selected');
       item.scrollIntoView({ block: 'nearest' });
     } else {
@@ -1791,13 +1837,21 @@ function updateSelection(results) {
 }
 
 function performSearch(query) {
-  const searchInProfiles = document.getElementById('searchInCurrentProfiles').checked;
-  const searchInSubfolders = document.getElementById('searchInSubfolders').checked;
+  const searchInProfilesElement = document.getElementById('searchInCurrentProfiles');
+  const searchInSubfoldersElement = document.getElementById('searchInSubfolders');
+  
+  if (!searchInProfilesElement || !searchInSubfoldersElement) {
+    console.warn('Elementos de filtro de búsqueda no encontrados');
+    return;
+  }
+  
+  const searchInProfiles = searchInProfilesElement.checked;
+  const searchInSubfolders = searchInSubfoldersElement.checked;
   
   fetch(`/documents/search?query=${encodeURIComponent(query)}&search_in_profiles=${searchInProfiles}&search_in_subfolders=${searchInSubfolders}`)
     .then(response => response.json())
     .then(data => {
-      displaySearchResults(data.results);
+      displaySearchResults(data.results || []);
     })
     .catch(error => {
       console.error('Error en la búsqueda:', error);
@@ -1809,6 +1863,11 @@ function displaySearchResults(results) {
   const searchResults = document.getElementById('searchResults');
   const searchResultsList = document.getElementById('searchResultsList');
   const resultsCount = document.querySelector('.results-count');
+  
+  if (!searchResults || !searchResultsList) {
+    console.warn('Elementos de resultados de búsqueda no encontrados');
+    return;
+  }
   
   if (results.length === 0) {
     searchResultsList.innerHTML = `
@@ -1848,8 +1907,10 @@ function navigateToFolder(folderId) {
 
 function closeSearchResults() {
   const searchResults = document.getElementById('searchResults');
-  searchResults.style.display = 'none';
-  selectedIndex = -1;
+  if (searchResults) {
+    searchResults.style.display = 'none';
+  }
+  window.globalSelectedIndex = -1;
 }
 
 function escapeHtml(text) {
@@ -1861,6 +1922,33 @@ function escapeHtml(text) {
 // Funciones globales para onclick
 window.toggleActionsMenu = toggleActionMenu;
 window.toggleProfileFilters = toggleProfileFilters;
+window.closeSearchResults = closeSearchResults;
+
+document.addEventListener('turbolinks:before-visit', function() {
+  clearTimeout(window.globalSearchTimeout);
+  window.globalSelectedIndex = -1;
+  const searchResults = document.getElementById('searchResults');
+  if (searchResults) {
+    searchResults.style.display = 'none';
+  }
+});
+
+document.addEventListener('turbolinks:before-cache', function() {
+  clearTimeout(window.globalSearchTimeout);
+  window.globalSelectedIndex = -1;
+  const searchResults = document.getElementById('searchResults');
+  if (searchResults) {
+    searchResults.style.display = 'none';
+  }
+});
+
+document.addEventListener('beforeunload', function() {
+  clearTimeout(window.globalSearchTimeout);
+  const searchResults = document.getElementById('searchResults');
+  if (searchResults) {
+    searchResults.style.display = 'none';
+  }
+});
 </script>
 
 

@@ -34,3 +34,6 @@ Evaluating both initial and long-term costs of the selected technologies, consid
 ## Conclusion
 
 This project seeks to offer a robust and tailored document management solution, anticipating future growth challenges and opportunities, ensuring efficiency, security, and information accessibility for businesses.
+
+
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES

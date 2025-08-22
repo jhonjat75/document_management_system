@@ -184,25 +184,36 @@
 
 <script>
   document.addEventListener('turbolinks:load', () => {
-    const simpleModalButton = document.querySelector('[data-target="#simpleModal"]');
-    const uploadFileModalButton = document.querySelector('[data-target="#uploadFileModal"]');
-    const simpleModal = document.getElementById('simpleModal');
-    const uploadFileModal = document.getElementById('uploadFileModal');
-    const simpleModalCloseButton = simpleModal.querySelector('[data-dismiss="modal"]');
-    const uploadFileModalCloseButton = uploadFileModal.querySelector('[data-dismiss="modal"]');
-
-    if (simpleModal && simpleModalButton) {
-      const simpleModalInstance = new bootstrap.Modal(simpleModal);
-      simpleModalButton.addEventListener('click', () => simpleModalInstance.show());
-      simpleModalCloseButton.addEventListener('click', () => simpleModalInstance.hide());
+    // Verificar que Bootstrap esté disponible
+    if (typeof bootstrap === 'undefined') {
+      console.warn('Bootstrap no está disponible');
+      return;
     }
 
+    // Simple Modal
+    const simpleModalButton = document.querySelector('[data-target="#simpleModal"]');
+    const simpleModal = document.getElementById('simpleModal');
+    
+    if (simpleModal && simpleModalButton) {
+      const simpleModalCloseButton = simpleModal.querySelector('[data-dismiss="modal"]');
+      if (simpleModalCloseButton) {
+        const simpleModalInstance = new bootstrap.Modal(simpleModal);
+        simpleModalButton.addEventListener('click', () => simpleModalInstance.show());
+        simpleModalCloseButton.addEventListener('click', () => simpleModalInstance.hide());
+      }
+    }
+
+    // Upload File Modal
+    const uploadFileModalButton = document.querySelector('[data-target="#uploadFileModal"]');
+    const uploadFileModal = document.getElementById('uploadFileModal');
+    
     if (uploadFileModal && uploadFileModalButton) {
-      const uploadFileModalInstance = new bootstrap.Modal(uploadFileModal);
-      uploadFileModalButton.addEventListener('click', () => uploadFileModalInstance.show());
-      uploadFileModalCloseButton.addEventListener('click', () => uploadFileModalInstance.hide())
+      const uploadFileModalCloseButton = uploadFileModal.querySelector('[data-dismiss="modal"]');
+      if (uploadFileModalCloseButton) {
+        const uploadFileModalInstance = new bootstrap.Modal(uploadFileModal);
+        uploadFileModalButton.addEventListener('click', () => uploadFileModalInstance.show());
+        uploadFileModalCloseButton.addEventListener('click', () => uploadFileModalInstance.hide());
+      }
     }
   });
-
-
 </script>
