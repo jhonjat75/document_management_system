@@ -2,6 +2,8 @@
 
 module FoldersHelper
   def profile_color(profile_name)
+    return '#6B7280' if profile_name.blank?
+    
     colors = [
       '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
       '#8B5CF6', '#06B6D4', '#F97316', '#84CC16',
@@ -34,6 +36,21 @@ module FoldersHelper
     end
   end
 
+  def user_profile_permissions_summary(user)
+    summary = profile_summary_for_user(user)
+    
+    permissions = []
+    permissions << "Puedes crear carpetas" if summary[:can_create_any]
+    permissions << "Puedes editar carpetas" if summary[:can_update_any]
+    permissions << "Puedes eliminar carpetas" if summary[:can_delete_any]
+    
+    if permissions.empty?
+      "Solo lectura en #{summary[:total_profiles]} departamento#{summary[:total_profiles] != 1 ? 's' : ''}"
+    else
+      permissions.join(", ") + " en #{summary[:total_profiles]} departamento#{summary[:total_profiles] != 1 ? 's' : ''}"
+    end
+  end
+
   def profile_summary_for_user(user)
     accessible_profiles = accessible_profiles_for_user(user)
     
@@ -46,5 +63,20 @@ module FoldersHelper
       can_delete_any: accessible_profiles.joins(:user_profiles)
         .where(user_profiles: { user: user, can_delete: true }).exists?
     }
+  end
+
+  def user_profile_permissions_summary(user)
+    summary = profile_summary_for_user(user)
+    
+    permissions = []
+    permissions << "Puedes crear carpetas" if summary[:can_create_any]
+    permissions << "Puedes editar carpetas" if summary[:can_update_any]
+    permissions << "Puedes eliminar carpetas" if summary[:can_delete_any]
+    
+    if permissions.empty?
+      "Solo lectura en #{summary[:total_profiles]} departamento#{summary[:total_profiles] != 1 ? 's' : ''}"
+    else
+      permissions.join(", ") + " en #{summary[:total_profiles]} departamento#{summary[:total_profiles] != 1 ? 's' : ''}"
+    end
   end
 end

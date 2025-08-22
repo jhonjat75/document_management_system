@@ -1,472 +1,838 @@
+<div class="folders-container">
+  <div class="header">
+    <div class="header-main">
+      <h1>Gestión de Documentos</h1>
+      <div class="header-stats">
+        <span><i class="fas fa-users"></i> <%= accessible_profiles_for_user(current_user).count %> departamentos</span>
+        <span><i class="fas fa-folder"></i> <%= @folders.count %> carpetas</span>
+      </div>
+    </div>
+    <button class="btn-create" onclick="openCreateModal()">
+      <i class="fas fa-plus"></i>
+      Nueva Carpeta
+    </button>
+  </div>
+
+  <div class="body">
+    <div class="controls-section">
+      <div class="controls-row">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            id="fileSearchInput" 
+            placeholder="Buscar archivos, carpetas o usuarios..."
+            autocomplete="off"
+          >
+          <button id="searchClearBtn" class="clear-btn" style="display: none;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="department-selector">
+          <div class="selector-wrapper">
+            <button class="selector-btn" onclick="toggleDepartmentDropdown()">
+              <i class="fas fa-building"></i>
+              <span id="selectedDepartment">Todos los Departamentos</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div id="departmentDropdown" class="dropdown-menu">
+              <div class="dropdown-item active" data-filter="all">
+                <span class="item-name">Todos los Departamentos</span>
+                <span class="item-count"><%= @folders.count %></span>
+              </div>
+              <% accessible_profiles_for_user(current_user).each do |profile| %>
+                <div class="dropdown-item" data-filter="<%= profile.id %>">
+                  <span class="item-name"><%= profile.name %></span>
+                  <span class="item-count"><%= profile.folders.count %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="searchResults" class="search-results" style="display: none;">
+      <div id="searchResultsList" class="search-results-list"></div>
+    </div>
+
+    <div class="departments-section">
+      <% accessible_profiles_for_user(current_user).each do |profile| %>
+        <% profile_folders = @folders.select { |folder_data| folder_data[:folder].profiles.any? { |p| p.id == profile.id } } %>
+        <% next if profile_folders.empty? %>
+        
+        <div class="department-group" data-department="<%= profile.id %>">
+          <h2 class="department-title"><%= profile.name %></h2>
+          
+          <div class="folders-grid">
+            <% profile_folders.each do |folder_data| %>
+              <% folder = folder_data[:folder] %>
+              <% can_edit = folder_data[:can_edit] %>
+              <% has_files = folder.documents.any? %>
+              <% has_subfolders = folder.subfolders.any? %>
+              
+              <div class="folder-card <%= 'has-files' if has_files %> <%= 'has-subfolders' if has_subfolders %>">
+                <div class="card-content">
+                  <div class="card-main">
+                    <div class="folder-header">
+                      <div class="folder-icon-wrapper">
+                        <div class="folder-icon">
+                          <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="folder-status-indicators">
+                          <% if has_files %>
+                            <div class="status-dot files" title="Tiene archivos"></div>
+                          <% end %>
+                          <% if has_subfolders %>
+                            <div class="status-dot subfolders" title="Tiene subcarpetas"></div>
+                          <% end %>
+                        </div>
+                      </div>
+                      
+                      <div class="folder-info">
+                        <h3 class="folder-name"><%= folder.name %></h3>
+                        <div class="folder-meta">
+                          <div class="meta-row">
+                            <span class="meta-item">
+                              <i class="fas fa-user"></i>
+                              <%= folder.user.fullname %>
+                            </span>
+                            <span class="meta-item">
+                              <i class="fas fa-calendar"></i>
+                              <%= folder.created_at.strftime('%d/%m/%Y') %>
+                            </span>
+                          </div>
+                          <div class="meta-row">
+                            <span class="meta-item">
+                              <i class="fas fa-file"></i>
+                              <%= folder.documents.count %> archivos
+                            </span>
+                            <span class="meta-item">
+                              <i class="fas fa-folder-tree"></i>
+                              <%= folder.subfolders.count %> subcarpetas
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="folder-actions">
+                      <a href="<%= folder_path(folder) %>" class="action-btn primary">
+                        <i class="fas fa-eye"></i>
+                        Ver
+                      </a>
+                      <% if can_edit %>
+                        <a href="<%= edit_folder_path(folder) %>" class="action-btn secondary">
+                          <i class="fas fa-edit"></i>
+                          Editar
+                        </a>
+                      <% end %>
+                    </div>
+                  </div>
+                  
+                  <div class="card-hover-overlay">
+                    <div class="overlay-content">
+                      <div class="overlay-icon">
+                        <i class="fas fa-folder-open"></i>
+                      </div>
+                      <span>Acceder a la carpeta</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div id="createFolderModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Crear Nueva Carpeta</h2>
+        <button class="modal-close" onclick="closeCreateModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <%= form_with(model: Folder.new, local: true, class: 'create-folder-form') do |form| %>
+        <div class="form-group">
+          <label for="folder_name">Nombre de la Carpeta</label>
+          <%= form.text_field :name, class: 'form-input', required: true, placeholder: 'Ej: Documentos Q1 2024' %>
+        </div>
+        
+        <div class="form-group">
+          <label for="folder_description">Descripción (opcional)</label>
+          <%= form.text_area :description, class: 'form-textarea', rows: 3, placeholder: 'Describe el propósito de esta carpeta...' %>
+        </div>
+        
+        <div class="form-group">
+          <label for="folder_profile_id">Departamento</label>
+          <%= form.select :profile_id, 
+              accessible_profiles_for_user(current_user).map { |p| [p.name, p.id] },
+              { prompt: 'Selecciona un departamento' },
+              { class: 'form-select', required: true } %>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancelar</button>
+          <%= form.submit 'Crear Carpeta', class: 'btn-primary' %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
 <style>
-.folders-container {
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  min-height: 100vh;
+:root {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --success: #10b981;
+  --info: #06b6d4;
+  --warning: #f59e0b;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --border-light: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
 }
 
-.folders-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 2rem;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+* {
+  box-sizing: border-box;
 }
 
-.header-content {
-  flex: 1;
-}
-
-.page-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.page-title i {
-  color: #3b82f6;
-  font-size: 2rem;
-}
-
-.page-subtitle {
-  font-size: 1.1rem;
-  color: #64748b;
-  margin: 0 0 1rem 0;
-  font-weight: 400;
-}
-
-.user-permissions-summary {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.permission-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #64748b;
-  background: #f8fafc;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.permission-info i {
-  color: #3b82f6;
-}
-
-.permission-badge-summary {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.75rem;
-  transition: all 0.2s ease;
-}
-
-.permission-badge-summary.create {
-  background: #10b981;
-}
-
-.permission-badge-summary.edit {
-  background: #f59e0b;
-}
-
-.permission-badge-summary.delete {
-  background: #ef4444;
-}
-
-  .permission-badge-summary:hover {
-    transform: scale(1.1);
-  }
-
-  .file-search-section {
-    background: white;
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  .search-container {
-    position: relative;
-    margin-bottom: 1rem;
-  }
-
-  .search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 1rem;
-    color: #64748b;
-    font-size: 1.1rem;
-    z-index: 2;
-  }
-
-  .file-search-input {
-    width: 100%;
-    padding: 1rem 3rem 1rem 3rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    background: #f8fafc;
-  }
-
-  .file-search-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .search-clear-btn {
-    position: absolute;
-    right: 1rem;
-    background: none;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    z-index: 2;
-  }
-
-  .search-clear-btn:hover {
-    background: #f1f5f9;
-    color: #ef4444;
-  }
-
-  .search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    border: 1px solid #e2e8f0;
-    z-index: 1000;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-
-  .search-results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #f1f5f9;
-    background: #f8fafc;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .results-count {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
-  }
-
-  .close-search-btn {
-    background: none;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-  }
-
-  .close-search-btn:hover {
-    background: #f1f5f9;
-    color: #ef4444;
-  }
-
-  .search-results-list {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .search-result-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #f1f5f9;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .search-result-item:last-child {
-    border-bottom: none;
-  }
-
-  .search-result-item:hover {
-    background: #f8fafc;
-  }
-
-  .search-result-item.selected {
-    background: #eff6ff;
-    border-left: 3px solid #3b82f6;
-  }
-
-  .search-result-icon {
-    width: 32px;
-    height: 32px;
-    background: #3b82f6;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-
-  .search-result-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .search-result-filename {
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .search-result-path {
-    font-size: 0.8rem;
-    color: #64748b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .search-result-folder {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: #3b82f6;
-    font-weight: 500;
-  }
-
-  .search-results-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #f1f5f9;
-    background: #f8fafc;
-    border-radius: 0 0 12px 12px;
-  }
-
-  .search-tip {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: #64748b;
-  }
-
-  .search-tip i {
-    color: #3b82f6;
-  }
-
-  .search-filters {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .search-filter-group {
-    display: flex;
-    align-items: center;
-  }
-
-  .search-filter-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #64748b;
-  }
-
-  .search-filter-label input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: #3b82f6;
-  }
-
-  .search-filter-label span {
-    user-select: none;
-  }
-
-  .no-results {
-    padding: 2rem 1.5rem;
-    text-align: center;
-    color: #64748b;
-  }
-
-  .no-results i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: #94a3b8;
-  }
-
-  .no-results p {
-    margin: 0;
-    font-size: 0.9rem;
-  }
-  
-  .btn-create-folder {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-}
-
-.btn-create-folder:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4);
-}
-
-.btn-create-folder i {
-  font-size: 1.1rem;
-}
-
-.profile-filter-section {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.filter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.filter-header h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1e293b;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.6;
   margin: 0;
+}
+
+.folders-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--spacing-2xl);
+  margin-bottom: 0;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-xl);
+}
+
+.header-main h1 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.header-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.header-stats span {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--spacing-sm);
 }
 
-.filter-header h3 i {
-  color: #3b82f6;
+.btn-create {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
-.btn-toggle-filters {
+.btn-create:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.body {
+  background: var(--bg-primary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  border-top: none;
+}
+
+.controls-section {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 600px;
+}
+
+.search-box i {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.search-box input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 3rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  background: var(--bg-secondary);
+  transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.clear-btn {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  padding: var(--spacing-xs);
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
-.btn-toggle-filters:hover {
-  background: #f1f5f9;
-  color: #3b82f6;
+.clear-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
-.profile-filters {
-  display: block;
+.department-selector {
+  flex-shrink: 0;
 }
 
-.filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.selector-wrapper {
+  position: relative;
+  min-width: 280px;
 }
 
-.filter-chip {
-  background: #f1f5f9;
-  border: 2px solid transparent;
-  border-radius: 25px;
-  padding: 0.75rem 1.25rem;
+.selector-btn {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-light);
+  color: var(--text-primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-lg);
   cursor: pointer;
+  font-weight: 500;
   transition: all 0.3s ease;
+  font-size: 1rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-md);
+  width: 100%;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
 }
 
-.filter-chip:hover {
-  background: #e2e8f0;
+.selector-btn:hover {
+  border-color: var(--primary);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
-.filter-chip.active {
-  background: #3b82f6;
+.selector-btn i:first-child {
+  color: var(--primary);
+  font-size: 1.125rem;
+}
+
+.selector-btn i:last-child {
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.selector-btn.active i:last-child {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  margin-top: var(--spacing-sm);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.dropdown-item.active {
+  background: var(--primary);
   color: white;
-  border-color: #3b82f6;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
 }
 
-.chip-label {
+.item-name {
   font-weight: 500;
-  font-size: 0.9rem;
 }
 
-.chip-count {
+.item-count {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
   font-weight: 600;
+}
+
+.dropdown-item.active .item-count {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.search-results {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  margin-bottom: var(--spacing-xl);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-results-list {
+  padding: 0;
+  margin: 0;
+}
+
+.search-result-item {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.search-result-item:hover,
+.search-result-item.selected {
+  background: var(--bg-secondary);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item i {
+  color: var(--primary);
+  width: 20px;
+}
+
+.departments-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+.department-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.department-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--border-light);
 }
 
 .folders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
-  animation: fadeInUp 0.6s ease-out;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
 }
 
-@keyframes fadeInUp {
+.folder-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  cursor: pointer;
+}
+
+.folder-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-8px) scale(1.02);
+}
+
+.folder-card.has-files {
+  border-left: 4px solid var(--success);
+}
+
+.folder-card.has-subfolders {
+  border-left: 4px solid var(--info);
+}
+
+.folder-card.has-files.has-subfolders {
+  border-left: 4px solid var(--warning);
+}
+
+.card-content {
+  position: relative;
+  height: 100%;
+}
+
+.card-main {
+  padding: var(--spacing-xl);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.folder-header {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.folder-icon-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.folder-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.75rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.folder-card:hover .folder-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: var(--shadow-lg);
+}
+
+.folder-status-indicators {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: flex;
+  gap: 4px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+}
+
+.status-dot.files {
+  background: var(--success);
+}
+
+.status-dot.subfolders {
+  background: var(--info);
+}
+
+.folder-info {
+  flex: 1;
+}
+
+.folder-name {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  transition: color 0.3s ease;
+}
+
+.folder-card:hover .folder-name {
+  color: var(--primary);
+}
+
+.folder-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.meta-row {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  transition: color 0.3s ease;
+}
+
+.folder-card:hover .meta-item {
+  color: var(--text-primary);
+}
+
+.meta-item i {
+  color: var(--primary);
+  width: 16px;
+  font-size: 0.875rem;
+  transition: transform 0.3s ease;
+}
+
+.folder-card:hover .meta-item i {
+  transform: scale(1.1);
+}
+
+.folder-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+  position: relative;
+  z-index: 10; /* Asegura que esté por encima del overlay */
+  background: var(--bg-primary);
+  padding: var(--spacing-md);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  border-top: 1px solid var(--border-light);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  flex: 1;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.action-btn:hover::before {
+  left: 100%;
+}
+
+.action-btn.primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.action-btn.primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.action-btn.secondary {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-color: var(--border-light);
+}
+
+.action-btn.secondary:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.98), rgba(79, 70, 229, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  pointer-events: none;
+}
+
+.folder-card:hover .card-hover-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.overlay-content {
+  text-align: center;
+  color: white;
+  transform: translateY(20px);
+  transition: transform 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.folder-card:hover .overlay-content {
+  transform: translateY(0);
+}
+
+.overlay-icon {
+  font-size: 3rem;
+  margin-bottom: 0;
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.overlay-content span {
+  font-size: 1.125rem;
+  font-weight: 600;
+  opacity: 1;
+  letter-spacing: 0.5px;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  margin: 5% auto;
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 600px;
+  box-shadow: var(--shadow-xl);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-50px);
   }
   to {
     opacity: 1;
@@ -474,1090 +840,201 @@
   }
 }
 
-.folder-card {
-  animation: cardSlideIn 0.4s ease-out;
-  animation-fill-mode: both;
-}
-
-.folder-card:nth-child(1) { animation-delay: 0.1s; }
-.folder-card:nth-child(2) { animation-delay: 0.2s; }
-.folder-card:nth-child(3) { animation-delay: 0.3s; }
-.folder-card:nth-child(4) { animation-delay: 0.4s; }
-.folder-card:nth-child(5) { animation-delay: 0.5s; }
-.folder-card:nth-child(6) { animation-delay: 0.6s; }
-
-@keyframes cardSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.folder-card {
-  background: white;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  position: relative;
-}
-
-.folder-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.folder-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.08);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.folder-card:hover::before {
-  opacity: 1;
-}
-
-.folder-header {
-  padding: 2rem 2rem 1.5rem 2rem;
-  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
-}
-
-.folder-icon {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 0%, #d97706 100%);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.75rem;
-  flex-shrink: 0;
-  box-shadow: 0 8px 16px -4px rgba(251, 191, 36, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.folder-icon::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transform: rotate(45deg);
-  transition: transform 0.6s ease;
-}
-
-.folder-card:hover .folder-icon::after {
-  transform: rotate(45deg) translate(50%, 50%);
-}
-
-.folder-title {
-  flex: 1;
-  min-width: 0;
-}
-
-.folder-title h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 0.75rem 0;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
-}
-
-.folder-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.folder-meta span {
-  font-size: 0.9rem;
-  color: #475569;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 500;
-}
-
-.folder-meta span i {
-  width: 16px;
-  color: #64748b;
-  font-size: 0.85rem;
-}
-
-.folder-actions {
-  position: relative;
-  margin-top: 0.5rem;
-}
-
-.btn-actions {
-  background: rgba(241, 245, 249, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.75rem;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-actions:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #3b82f6;
-  transform: scale(1.05);
-}
-
-.actions-menu {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  min-width: 200px;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px) scale(0.95);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-}
-
-.actions-menu.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-}
-
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 1rem 1.25rem;
-  color: #374151;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
-  font-weight: 500;
-}
-
-.action-item:first-child {
-  border-radius: 16px 16px 0 0;
-}
-
-.action-item:last-child {
-  border-bottom: none;
-  border-radius: 0 0 16px 16px;
-}
-
-.action-item:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  color: #3b82f6;
-  transform: translateX(4px);
-}
-
-.action-item.delete:hover {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #ef4444;
-}
-
-.action-item i {
-  width: 18px;
-  font-size: 0.95rem;
-}
-
-.action-item span {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.folder-content {
-  padding: 2rem;
-  background: white;
-}
-
-.folder-description {
-  margin-bottom: 2rem;
-}
-
-.folder-description p {
-  margin: 0;
-  color: #374151;
-  line-height: 1.7;
-  font-size: 1rem;
-  font-weight: 400;
-}
-
-.folder-description p.no-description {
-  color: #9ca3af;
-  font-style: italic;
-  font-weight: 400;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 1rem;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-  text-align: center;
-  margin: 0;
-}
-
-.profile-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
-
-.profile-badge {
-  background: var(--profile-color, #3b82f6);
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 25px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-badge::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.profile-badge:hover::before {
-  left: 100%;
-}
-
-.profile-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
-}
-
-.profile-badge.no-profile {
-  background: linear-gradient(135deg, #6b7280, #9ca3af);
-}
-
-.profile-badge i {
-  font-size: 0.8rem;
-}
-
-.folder-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.stat-item:hover::before {
-  opacity: 1;
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.1rem;
-  box-shadow: 0 4px 8px -2px rgba(59, 130, 246, 0.3);
-  flex-shrink: 0;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.folder-footer {
-  padding: 2rem;
-  border-top: 1px solid rgba(241, 245, 249, 0.8);
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: var(--spacing-xl);
+  border-bottom: 1px solid var(--border-light);
 }
 
-.permission-indicators {
-  display: flex;
-  gap: 0.75rem;
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.permission-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.15);
-}
-
-.permission-badge:hover {
-  transform: scale(1.1);
-}
-
-.permission-badge.edit {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.permission-badge.delete {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.btn-view-folder {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  text-decoration: none;
-  padding: 1rem 2rem;
-  border-radius: 14px;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-view-folder::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn-view-folder:hover::before {
-  left: 100%;
-}
-
-.btn-view-folder:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px -6px rgba(59, 130, 246, 0.4);
-  color: white;
-  text-decoration: none;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.empty-icon {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: var(--spacing-sm);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-  color: #64748b;
-  font-size: 2rem;
+  transition: all 0.2s;
 }
 
-.empty-state h3 {
-  font-size: 1.5rem;
+.modal-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.create-folder-form {
+  padding: var(--spacing-xl);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
   font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 0.875rem;
 }
 
-.empty-state p {
-  color: #64748b;
-  margin: 0 0 2rem 0;
-  font-size: 1.1rem;
-}
-
-.btn-create-first {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  font-weight: 600;
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  cursor: pointer;
+  background: var(--bg-primary);
   transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
-.btn-create-first:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4);
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
-.modal-content {
-  border-radius: 16px;
-  border: none;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  border-bottom: 1px solid #e2e8f0;
-  padding: 1.5rem;
-}
-
-.modal-header .modal-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.modal-header .modal-title i {
-  color: #3b82f6;
-}
-
-.modal-body {
-  padding: 2rem;
-}
-
-.create-folder-form .form-group {
-  margin-bottom: 1.5rem;
-}
-
-.create-folder-form label {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.create-folder-form label i {
-  color: #3b82f6;
-  width: 16px;
-}
-
-.create-folder-form .form-control {
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.create-folder-form .form-control:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.profile-selection {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.profile-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.profile-option:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.profile-checkbox {
-  display: none;
-}
-
-.profile-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  cursor: pointer;
-  flex: 1;
-}
-
-.profile-name {
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.profile-description {
-  font-size: 0.8rem;
-  color: #64748b;
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
 .form-actions {
   display: flex;
+  gap: var(--spacing-md);
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  margin-top: var(--spacing-xl);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-light);
+  color: var(--text-secondary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--border-light);
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background: var(--primary);
+  border: 2px solid var(--primary);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.folder-card.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 1200px) {
+  .folders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .folders-container {
-    padding: 1rem;
+    padding: var(--spacing-lg);
   }
   
-  .folders-header {
+  .header {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--spacing-lg);
     text-align: center;
+    padding: var(--spacing-xl);
   }
   
-  .page-title {
+  .header-main h1 {
     font-size: 2rem;
   }
   
+  .header-stats {
+    justify-content: center;
+  }
+  
+  .body {
+    padding: var(--spacing-xl);
+  }
+  
+  .controls-row {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  
+  .search-box {
+    max-width: none;
+  }
+  
   .folders-grid {
     grid-template-columns: 1fr;
   }
   
-  .folder-header {
+  .card-actions {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: var(--spacing-lg);
   }
   
-  .folder-footer {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+  .header-main h1 {
+    font-size: 1.75rem;
   }
   
-  .btn-view-folder {
-    text-align: center;
-    justify-content: center;
+  .body {
+    padding: var(--spacing-lg);
   }
   
-  .profile-selection {
-    grid-template-columns: 1fr;
+  .folder-meta {
+    gap: var(--spacing-xs);
   }
   
-  .file-search-section {
-    padding: 1rem;
-  }
-  
-  .search-filters {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .search-results {
-    position: fixed;
-    top: 50%;
-    left: 1rem;
-    right: 1rem;
-    transform: translateY(-50%);
-    max-height: 80vh;
-  }
-  
-  .folders-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .folder-card {
-    border-radius: 16px;
-  }
-  
-  .folder-header {
-    padding: 1.5rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .folder-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
-  }
-  
-  .folder-title h3 {
-    font-size: 1.25rem;
-  }
-  
-  .folder-content {
-    padding: 1.5rem;
-  }
-  
-  .folder-stats {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .folder-footer {
-    padding: 1.5rem;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .btn-view-folder {
-    text-align: center;
-    justify-content: center;
-    padding: 0.875rem 1.5rem;
-  }
-  
-  .permission-indicators {
-    justify-content: center;
+  .meta-item {
+    font-size: 0.75rem;
   }
 }
 </style>
-
-<div class="folders-container">
-  <!-- Header Section -->
-  <div class="folders-header">
-    <div class="header-content">
-      <h1 class="page-title">
-        <i class="fas fa-folder-tree"></i>
-        Sistema de Carpetas
-      </h1>
-      <p class="page-subtitle">Gestiona y organiza tus documentos por departamentos</p>
-      
-      <% user_summary = profile_summary_for_user(current_user) %>
-      <div class="user-permissions-summary">
-        <span class="permission-info">
-          <i class="fas fa-users"></i>
-          Acceso a <strong><%= user_summary[:total_profiles] %></strong> departamento<%= user_summary[:total_profiles] != 1 ? 's' : '' %>
-        </span>
-        <% if user_summary[:can_create_any] %>
-          <span class="permission-badge-summary create" title="Puedes crear carpetas">
-            <i class="fas fa-plus"></i>
-          </span>
-        <% end %>
-        <% if user_summary[:can_update_any] %>
-          <span class="permission-badge-summary edit" title="Puedes editar carpetas">
-            <i class="fas fa-edit"></i>
-          </span>
-        <% end %>
-        <% if user_summary[:can_delete_any] %>
-          <span class="permission-badge-summary delete" title="Puedes eliminar carpetas">
-            <i class="fas fa-trash"></i>
-          </span>
-        <% end %>
-      </div>
-    </div>
-    
-    <% if @can_create_folder %>
-      <button type="button" class="btn-create-folder" data-toggle="modal" data-target="#createFolderModal">
-        <i class="fas fa-plus"></i>
-        <span>Nueva Carpeta</span>
-      </button>
-    <% end %>
-  </div>
-
-  <!-- File Search Section -->
-  <div class="file-search-section">
-    <div class="search-container">
-      <div class="search-input-wrapper">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" 
-               id="fileSearchInput" 
-               class="file-search-input" 
-               placeholder="Buscar archivos por nombre..."
-               autocomplete="off">
-        <button class="search-clear-btn" id="searchClearBtn" style="display: none;">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      
-      <!-- Search Results Dropdown -->
-      <div class="search-results" id="searchResults" style="display: none;">
-        <div class="search-results-header">
-          <span class="results-count">Resultados de búsqueda</span>
-          <button class="close-search-btn" onclick="closeSearchResults()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="search-results-list" id="searchResultsList">
-          <!-- Los resultados se cargarán aquí dinámicamente -->
-        </div>
-        <div class="search-results-footer">
-          <span class="search-tip">
-            <i class="fas fa-info-circle"></i>
-            Haz clic en un archivo para ir a su carpeta
-          </span>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Search Filters -->
-    <div class="search-filters">
-      <div class="search-filter-group">
-        <label class="search-filter-label">
-          <input type="checkbox" id="searchInCurrentProfiles" checked>
-          <span>Buscar solo en mis departamentos</span>
-        </label>
-      </div>
-      <div class="search-filter-group">
-        <label class="search-filter-label">
-          <input type="checkbox" id="searchInSubfolders" checked>
-          <span>Incluir subcarpetas</span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <!-- Profile Filter Section -->
-  <div class="profile-filter-section">
-    <div class="filter-header">
-      <h3><i class="fas fa-filter"></i> Filtrar por Departamento</h3>
-      <button class="btn-toggle-filters" onclick="toggleProfileFilters()">
-        <i class="fas fa-chevron-down"></i>
-      </button>
-    </div>
-    
-    <div class="profile-filters" id="profileFilters">
-      <div class="filter-chips">
-        <div class="filter-chip active" data-profile="all">
-          <span class="chip-label">Todos</span>
-          <span class="chip-count"><%= @folders.count %></span>
-        </div>
-        <% 
-          # Solo mostrar perfiles a los que el usuario tiene acceso
-          user_accessible_profiles = accessible_profiles_for_user(current_user)
-        %>
-        <% user_accessible_profiles.each do |profile| %>
-          <% 
-            profile_folders = @folders.select { |f| f[:folder].profiles.include?(profile) }
-            user_permissions = user_profile_permissions(current_user, profile)
-          %>
-          <div class="filter-chip" data-profile="<%= profile.id %>" 
-               title="<%= profile.name %> - <%= profile_folders.count %> carpetas
-Permisos: <%= user_permissions ? "#{user_permissions[:can_create] ? 'Crear' : ''} #{user_permissions[:can_update] ? 'Editar' : ''} #{user_permissions[:can_delete] ? 'Eliminar' : ''}".strip : 'Solo lectura' %>">
-            <span class="chip-label"><%= profile.name %></span>
-            <span class="chip-count"><%= profile_folders.count %></span>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <!-- Folders Grid -->
-  <div class="folders-grid" id="foldersGrid">
-    <% @folders.each do |folder_data| %>
-      <% folder = folder_data[:folder] %>
-      <% can_edit = folder_data[:can_edit] %>
-      <% can_delete = folder_data[:can_delete] %>
-      
-      <div class="folder-card" data-profiles="<%= folder.profile_ids.join(',') %>">
-        <!-- Folder Header -->
-        <div class="folder-header">
-          <div class="folder-icon">
-            <i class="fas fa-folder"></i>
-          </div>
-          <div class="folder-title">
-            <h3><%= folder.name %></h3>
-            <div class="folder-meta">
-              <span class="created-by">
-                <i class="fas fa-user"></i>
-                <%= folder.user.first_name.present? ? "#{folder.user.first_name} #{folder.user.last_name}" : folder.user.email %>
-              </span>
-              <span class="created-date">
-                <i class="fas fa-calendar"></i>
-                <%= folder.created_at.strftime("%d/%m/%Y") %>
-              </span>
-            </div>
-          </div>
-          <div class="folder-actions">
-            <div class="action-dropdown">
-              <button class="btn-actions" onclick="toggleActionsMenu(this)">
-                <i class="fas fa-ellipsis-v"></i>
-              </button>
-              <div class="actions-menu">
-                <%= link_to folder_path(folder), class: "action-item" do %>
-                  <i class="fas fa-eye"></i>
-                  <span>Ver</span>
-                <% end %>
-                <% if can_edit %>
-                  <%= link_to edit_folder_path(folder), class: "action-item" do %>
-                    <i class="fas fa-edit"></i>
-                    <span>Editar</span>
-                  <% end %>
-                <% end %>
-                <% if can_delete && folder.subfolders.empty? && folder.documents.empty? %>
-                  <%= link_to folder, method: :delete, data: { confirm: '¿Estás seguro de que quieres eliminar esta carpeta?' }, class: "action-item delete" do %>
-                    <i class="fas fa-trash"></i>
-                    <span>Eliminar</span>
-                  <% end %>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Folder Content -->
-        <div class="folder-content">
-          <div class="folder-description">
-            <% if folder.description.present? %>
-              <p><%= truncate(folder.description, length: 120) %></p>
-            <% else %>
-              <p class="no-description">Sin descripción</p>
-            <% end %>
-          </div>
-
-          <!-- Profile Badges -->
-          <div class="profile-badges">
-            <% if folder.profiles.present? %>
-              <% folder.profiles.each do |profile| %>
-                <div class="profile-badge" style="--profile-color: <%= profile_color(profile.name) %>">
-                  <i class="fas fa-building"></i>
-                  <span><%= profile.name %></span>
-                </div>
-              <% end %>
-            <% else %>
-              <div class="profile-badge no-profile">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Sin perfiles</span>
-              </div>
-            <% end %>
-          </div>
-
-          <!-- Folder Stats -->
-          <div class="folder-stats">
-            <div class="stat-item">
-              <div class="stat-icon">
-                <i class="fas fa-folder"></i>
-              </div>
-              <div class="stat-content">
-                <span class="stat-number"><%= folder.subfolders.count %></span>
-                <span class="stat-label">Subcarpetas</span>
-              </div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-icon">
-                <i class="fas fa-file-alt"></i>
-              </div>
-              <div class="stat-content">
-                <span class="stat-number"><%= folder.documents.count %></span>
-                <span class="stat-label">Documentos</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Folder Footer -->
-        <div class="folder-footer">
-          <div class="permission-indicators">
-            <% if can_edit %>
-              <span class="permission-badge edit" title="Puedes editar">
-                <i class="fas fa-edit"></i>
-              </span>
-            <% end %>
-            <% if can_delete %>
-              <span class="permission-badge delete" title="Puedes eliminar">
-                <i class="fas fa-trash"></i>
-              </span>
-            <% end %>
-          </div>
-          
-          <%= link_to folder_path(folder), class: "btn-view-folder" do %>
-            <span>Ver Contenido</span>
-            <i class="fas fa-arrow-right"></i>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-
-  <!-- Empty State -->
-  <% if @folders.empty? %>
-    <div class="empty-state">
-      <div class="empty-icon">
-        <i class="fas fa-folder-open"></i>
-      </div>
-      <h3>No hay carpetas disponibles</h3>
-      <p>No tienes permisos para ver ninguna carpeta o aún no se han creado.</p>
-      <% if @can_create_folder %>
-        <button class="btn-create-first" data-toggle="modal" data-target="#createFolderModal">
-          <i class="fas fa-plus"></i>
-          Crear Primera Carpeta
-        </button>
-      <% end %>
-    </div>
-  <% end %>
-</div>
-
-<!-- Create Folder Modal -->
-<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="createFolderModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="createFolderModalLabel">
-          <i class="fas fa-folder-plus"></i>
-          Crear Nueva Carpeta
-        </h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <%= form_with(model: Folder.new, local: true, class: "create-folder-form") do |form| %>
-          <div class="form-row">
-            <div class="form-group col-md-8">
-              <%= form.label :name, 'Nombre de la Carpeta' do %>
-                <i class="fas fa-folder"></i>
-                Nombre
-              <% end %>
-              <%= form.text_field :name, class: 'form-control', placeholder: 'Ingresa el nombre de la carpeta', required: true %>
-            </div>
-            <div class="form-group col-md-4">
-              <%= form.label :parent_folder_id, 'Carpeta Padre' do %>
-                <i class="fas fa-level-up-alt"></i>
-                Carpeta Padre
-              <% end %>
-              <%= form.collection_select :parent_folder_id, Folder.where(parent_folder_id: nil), :id, :name, { prompt: "Carpeta raíz" }, { class: 'form-control' } %>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <%= form.label :description, 'Descripción' do %>
-              <i class="fas fa-align-left"></i>
-              Descripción
-            <% end %>
-            <%= form.text_area :description, class: 'form-control', rows: 3, placeholder: 'Describe el propósito de esta carpeta' %>
-          </div>
-          
-          <div class="form-group">
-            <%= form.label :profile_ids, "Departamentos con Acceso" do %>
-              <i class="fas fa-users"></i>
-              Departamentos
-            <% end %>
-            <div class="profile-selection">
-              <% Profile.all.each do |profile| %>
-                <div class="profile-option">
-                  <%= form.check_box :profile_ids, { multiple: true, class: 'profile-checkbox' }, profile.id, nil %>
-                  <%= form.label "profile_ids_#{profile.id}", profile.name, class: 'profile-label' do %>
-                    <span class="profile-name"><%= profile.name %></span>
-                    <span class="profile-description"><%= profile.description %></span>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-          
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">
-              <i class="fas fa-times"></i>
-              Cancelar
-            </button>
-            <%= form.submit 'Crear Carpeta', class: 'btn btn-primary' do %>
-              <i class="fas fa-folder-plus"></i>
-              Crear Carpeta
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 if (typeof window.globalSearchTimeout === 'undefined') {
@@ -1579,11 +1056,10 @@ function initializeFolderFunctionality() {
   
   try {
     cleanupExistingEventListeners();
-    initializeProfileFilters();
-    initializeActionMenus();
+    initializeFilters();
     initializeCreateModal();
     initializeFileSearch();
-    setupClickOutsideHandlers();
+    addLoadingStates();
   } catch (error) {
     console.error('Error durante la inicialización:', error);
   }
@@ -1611,56 +1087,57 @@ function cleanupExistingEventListeners() {
   if (searchResults) {
     searchResults.style.display = 'none';
   }
-  
-  const searchFilters = document.querySelectorAll('#searchInCurrentProfiles, #searchInSubfolders');
-  searchFilters.forEach(filter => {
-    if (filter) {
-      const newFilter = filter.cloneNode(true);
-      filter.parentNode.replaceChild(newFilter, filter);
-    }
+}
+
+function addLoadingStates() {
+  const folderCards = document.querySelectorAll('.folder-card');
+  folderCards.forEach(card => {
+    card.classList.add('loading');
+    setTimeout(() => {
+      card.classList.remove('loading');
+    }, 500 + Math.random() * 1000);
   });
 }
 
-function initializeProfileFilters() {
-  const filterChips = document.querySelectorAll('.filter-chip');
-  const folders = document.querySelectorAll('.folder-card');
-  const filters = document.getElementById('profileFilters');
-  const toggleBtn = document.querySelector('.btn-toggle-filters i');
+function initializeFilters() {
+  const dropdownItems = document.querySelectorAll('.dropdown-item');
+  const departmentGroups = document.querySelectorAll('.department-group');
+  const selectorBtn = document.querySelector('.selector-btn');
+  const selectedDepartmentSpan = document.getElementById('selectedDepartment');
   
-  if (filterChips.length === 0 || folders.length === 0) return;
-  
-  // Asegurar estado inicial correcto
-  if (filters && toggleBtn) {
-    filters.style.display = 'block';
-    toggleBtn.className = 'fas fa-chevron-down';
-    
-    toggleBtn.parentElement.addEventListener('click', function(e) {
-      e.preventDefault();
-      toggleProfileFilters();
-    });
+  if (!dropdownItems.length || !departmentGroups.length) {
+    return;
   }
   
-  filterChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      const profileId = chip.dataset.profile;
+  dropdownItems.forEach(item => {
+    item.addEventListener('click', function() {
+      const filterValue = this.dataset.filter;
+      const itemName = this.querySelector('.item-name').textContent;
       
-      filterChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
+      // Actualizar botón selector
+      selectedDepartmentSpan.textContent = itemName;
+      selectorBtn.classList.remove('active');
       
-      if (profileId === 'all') {
-        folders.forEach(folder => {
-          folder.style.display = 'block';
-          folder.style.opacity = '1';
+      // Actualizar estado activo
+      dropdownItems.forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Cerrar dropdown
+      closeDepartmentDropdown();
+      
+      // Filtrar departamentos
+      if (filterValue === 'all') {
+        departmentGroups.forEach(group => {
+          group.style.display = 'block';
+          group.style.animation = 'fadeIn 0.5s ease';
         });
       } else {
-        folders.forEach(folder => {
-          const folderProfiles = folder.dataset.profiles.split(',');
-          if (folderProfiles.includes(profileId)) {
-            folder.style.display = 'block';
-            folder.style.opacity = '1';
+        departmentGroups.forEach(group => {
+          if (group.dataset.department === filterValue) {
+            group.style.display = 'block';
+            group.style.animation = 'fadeIn 0.5s ease';
           } else {
-            folder.style.display = 'none';
-            folder.style.opacity = '0';
+            group.style.display = 'none';
           }
         });
       }
@@ -1668,79 +1145,23 @@ function initializeProfileFilters() {
   });
 }
 
-function initializeActionMenus() {
-  const actionButtons = document.querySelectorAll('.btn-actions');
-  
-  actionButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleActionMenu(button);
-    });
-  });
-}
-
-function toggleActionMenu(button) {
-  const menu = button.nextElementSibling;
-  const allMenus = document.querySelectorAll('.actions-menu');
-  
-  allMenus.forEach(m => {
-    if (m !== menu) {
-      m.classList.remove('show');
-    }
-  });
-  
-  menu.classList.toggle('show');
-}
-
 function initializeCreateModal() {
-  const profileCheckboxes = document.querySelectorAll('.profile-checkbox');
-  profileCheckboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-      const profileOption = this.closest('.profile-option');
-      if (this.checked) {
-        profileOption.style.borderColor = '#3b82f6';
-        profileOption.style.background = '#eff6ff';
-      } else {
-        profileOption.style.borderColor = '#e2e8f0';
-        profileOption.style.background = '#f8fafc';
-      }
-    });
-  });
-}
-
-function toggleProfileFilters() {
-  const filters = document.getElementById('profileFilters');
-  const toggleBtn = document.querySelector('.btn-toggle-filters i');
+  const modal = document.getElementById('createFolderModal');
+  if (!modal) return;
   
-  if (!filters || !toggleBtn) {
-    console.warn('Elementos del filtro no encontrados');
-    return;
-  }
+  window.openCreateModal = function() {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
   
-  const isVisible = filters.style.display !== 'none' && filters.style.display !== '';
+  window.closeCreateModal = function() {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  };
   
-  if (isVisible) {
-    filters.style.display = 'none';
-    toggleBtn.className = 'fas fa-chevron-down';
-  } else {
-    filters.style.display = 'block';
-    toggleBtn.className = 'fas fa-chevron-up';
-  }
-}
-
-function setupClickOutsideHandlers() {
-  document.addEventListener('click', (e) => {
-    const mainContainer = document.querySelector('.folders-container');
-    if (!mainContainer) return;
-    
-    if (!e.target.closest('.action-dropdown')) {
-      document.querySelectorAll('.actions-menu').forEach(menu => {
-        menu.classList.remove('show');
-      });
-    }
-    
-    if (!e.target.closest('.search-container')) {
-      closeSearchResults();
+  window.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeCreateModal();
     }
   });
 }
@@ -1750,8 +1171,6 @@ function initializeFileSearch() {
   const searchResults = document.getElementById('searchResults');
   const searchResultsList = document.getElementById('searchResultsList');
   const searchClearBtn = document.getElementById('searchClearBtn');
-  const searchInProfiles = document.getElementById('searchInCurrentProfiles');
-  const searchInSubfolders = document.getElementById('searchInSubfolders');
   
   if (!searchInput || !searchResults || !searchResultsList || !searchClearBtn) {
     return;
@@ -1815,15 +1234,7 @@ function initializeFileSearch() {
     closeSearchResults();
     this.style.display = 'none';
   });
-  
-  [searchInProfiles, searchInSubfolders].forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-      if (searchInput.value.trim().length >= 2) {
-        performSearch(searchInput.value.trim());
-      }
-    });
-    });
-  }
+}
 
 function updateSelection(results) {
   results.forEach((item, index) => {
@@ -1837,18 +1248,7 @@ function updateSelection(results) {
 }
 
 function performSearch(query) {
-  const searchInProfilesElement = document.getElementById('searchInCurrentProfiles');
-  const searchInSubfoldersElement = document.getElementById('searchInSubfolders');
-  
-  if (!searchInProfilesElement || !searchInSubfoldersElement) {
-    console.warn('Elementos de filtro de búsqueda no encontrados');
-    return;
-  }
-  
-  const searchInProfiles = searchInProfilesElement.checked;
-  const searchInSubfolders = searchInSubfoldersElement.checked;
-  
-  fetch(`/documents/search?query=${encodeURIComponent(query)}&search_in_profiles=${searchInProfiles}&search_in_subfolders=${searchInSubfolders}`)
+  fetch(`/documents/search?query=${encodeURIComponent(query)}`)
     .then(response => response.json())
     .then(data => {
       displaySearchResults(data.results || []);
@@ -1862,43 +1262,29 @@ function performSearch(query) {
 function displaySearchResults(results) {
   const searchResults = document.getElementById('searchResults');
   const searchResultsList = document.getElementById('searchResultsList');
-  const resultsCount = document.querySelector('.results-count');
   
   if (!searchResults || !searchResultsList) {
-    console.warn('Elementos de resultados de búsqueda no encontrados');
     return;
   }
   
   if (results.length === 0) {
-    searchResultsList.innerHTML = `
-      <div class="no-results">
-        <i class="fas fa-search"></i>
-        <p>No se encontraron archivos con ese nombre</p>
-      </div>
-    `;
-    resultsCount.textContent = 'Sin resultados';
-  } else {
-    resultsCount.textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''}`;
-    
-    searchResultsList.innerHTML = results.map(doc => `
-      <div class="search-result-item" data-folder-id="${doc.folder_id}" onclick="navigateToFolder(${doc.folder_id})">
-        <div class="search-result-icon">
-          <i class="fas fa-file-alt"></i>
-        </div>
-        <div class="search-result-content">
-          <div class="search-result-filename">${escapeHtml(doc.name)}</div>
-          <div class="search-result-path">${escapeHtml(doc.folder_path)}</div>
-        </div>
-        <div class="search-result-folder">
-          <i class="fas fa-folder"></i>
-          <span>${escapeHtml(doc.folder_name)}</span>
-        </div>
-      </div>
-    `).join('');
+    searchResultsList.innerHTML = '<div class="search-result-item">No se encontraron resultados</div>';
+    searchResults.style.display = 'block';
+    return;
   }
   
+  searchResultsList.innerHTML = results.map(result => `
+    <div class="search-result-item" data-folder-id="${result.folder_id}" onclick="navigateToFolder('${result.folder_id}')">
+      <i class="fas fa-file"></i>
+      <div>
+        <div><strong>${escapeHtml(result.name)}</strong></div>
+        <div style="font-size: 0.75rem; color: #64748b;">En: ${escapeHtml(result.folder_name)}</div>
+      </div>
+    </div>
+  `).join('');
+  
   searchResults.style.display = 'block';
-  selectedIndex = -1;
+  window.globalSelectedIndex = -1;
 }
 
 function navigateToFolder(folderId) {
@@ -1919,10 +1305,39 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Funciones globales para onclick
-window.toggleActionsMenu = toggleActionMenu;
-window.toggleProfileFilters = toggleProfileFilters;
+function toggleDepartmentDropdown() {
+  const dropdown = document.getElementById('departmentDropdown');
+  const selectorBtn = document.querySelector('.selector-btn');
+  
+  if (!dropdown || !selectorBtn) {
+    return;
+  }
+  
+  const isVisible = dropdown.classList.contains('show');
+  
+  if (isVisible) {
+    closeDepartmentDropdown();
+  } else {
+    dropdown.classList.add('show');
+    selectorBtn.classList.add('active');
+  }
+}
+
+function closeDepartmentDropdown() {
+  const dropdown = document.getElementById('departmentDropdown');
+  const selectorBtn = document.querySelector('.selector-btn');
+  
+  if (!dropdown || !selectorBtn) {
+    return;
+  }
+  
+  dropdown.classList.remove('show');
+  selectorBtn.classList.remove('active');
+}
+
 window.closeSearchResults = closeSearchResults;
+window.toggleDepartmentDropdown = toggleDepartmentDropdown;
+window.closeDepartmentDropdown = closeDepartmentDropdown;
 
 document.addEventListener('turbolinks:before-visit', function() {
   clearTimeout(window.globalSearchTimeout);
@@ -1947,6 +1362,26 @@ document.addEventListener('beforeunload', function() {
   const searchResults = document.getElementById('searchResults');
   if (searchResults) {
     searchResults.style.display = 'none';
+  }
+});
+
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .department-group {
+    animation: fadeIn 0.5s ease;
+  }
+`;
+document.head.appendChild(style);
+
+document.addEventListener('click', function(e) {
+  const selectorWrapper = document.querySelector('.selector-wrapper');
+  if (selectorWrapper && !selectorWrapper.contains(e.target)) {
+    closeDepartmentDropdown();
   }
 });
 </script>
