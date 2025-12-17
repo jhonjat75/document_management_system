@@ -10,8 +10,24 @@ environment ENV.fetch("RAILS_ENV") { "development" }
 
 pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
 
-workers ENV.fetch("WEB_CONCURRENCY") { 2 }
-preload_app!
+worker_count = if ENV["WEB_CONCURRENCY"]
+                 ENV["WEB_CONCURRENCY"].to_i
+               elsif ENV["RAILS_ENV"] == "production"
+                 2
+               else
+                 0
+               end
 
+workers worker_count
+
+if worker_count > 0
+  preload_app!
+
+  on_worker_boot do
+    if defined?(ActiveRecord::Base)
+      ActiveRecord::Base.establish_connection
+    end
+  end
+end
 
 plugin :tmp_restart

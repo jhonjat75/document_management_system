@@ -26,7 +26,14 @@ class FoldersController < ApplicationController
   # POST /folders or /folders.json
   def create
     @folder = build_folder
-    @folder.profile_ids = parent_folder_profile_ids if @folder.parent_folder_id.present?
+
+    if @folder.parent_folder_id.present?
+      @folder.profile_ids = parent_folder_profile_ids
+    else
+      profile_ids_param = folder_params[:profile_ids] || []
+      profile_ids_param = [profile_ids_param] unless profile_ids_param.is_a?(Array)
+      @folder.profile_ids = profile_ids_param.reject(&:blank?) if profile_ids_param.any?
+    end
 
     if save_folder
       handle_successful_create
@@ -63,7 +70,7 @@ class FoldersController < ApplicationController
   end
 
   def folder_params
-    params.require(:folder).permit(:name, :description, :parent_folder_id, profile_ids: [])
+    params.require(:folder).permit(:name, :description, :parent_folder_id, :profile_id, profile_ids: [])
   end
 
   def build_folder

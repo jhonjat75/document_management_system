@@ -168,11 +168,11 @@
         </div>
         
         <div class="form-group">
-          <label for="folder_profile_id">Departamento</label>
-          <%= form.select :profile_id, 
-              accessible_profiles_for_user(current_user).map { |p| [p.name, p.id] },
+          <label for="folder_profile_ids">Departamento</label>
+          <%= form.collection_select :profile_ids, 
+              accessible_profiles_for_user(current_user), :id, :name,
               { prompt: 'Selecciona un departamento' },
-              { class: 'form-select', required: true } %>
+              { class: 'form-select', required: true, multiple: true } %>
         </div>
         
         <div class="form-actions">
@@ -845,30 +845,37 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-xl);
-  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-bottom: none;
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: white;
 }
 
 .modal-close {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
-  color: var(--text-muted);
+  color: white;
   padding: var(--spacing-sm);
   border-radius: 50%;
-  transition: all 0.2s;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .modal-close:hover {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
 }
 
 .create-folder-form {
@@ -884,19 +891,28 @@ body {
   margin-bottom: var(--spacing-sm);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
+  letter-spacing: 0.01em;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
   width: 100%;
-  padding: var(--spacing-md);
+  padding: 0.875rem 1rem;
   border: 2px solid var(--border-light);
   border-radius: var(--radius-md);
   font-size: 1rem;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 .form-input:focus,
@@ -904,12 +920,59 @@ body {
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary);
+  background: var(--bg-primary);
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input:hover:not(:focus),
+.form-select:hover:not(:focus),
+.form-textarea:hover:not(:focus) {
+  border-color: var(--border-medium);
+  background: var(--bg-primary);
 }
 
 .form-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+}
+
+.form-select[multiple] {
+  min-height: 120px;
+  padding: 0.75rem;
+  background-image: none;
+  cursor: default;
+  padding-right: 0.75rem;
+}
+
+.form-select[multiple] option {
+  padding: 0.625rem 0.75rem;
+  margin: 0.25rem 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.form-select[multiple] option:hover {
+  background: var(--bg-secondary);
+}
+
+.form-select[multiple] option:checked {
+  background: var(--primary) linear-gradient(0deg, var(--primary) 0%, var(--primary) 100%);
+  color: white;
+  font-weight: 600;
 }
 
 .form-actions {
@@ -920,36 +983,48 @@ body {
 }
 
 .btn-secondary {
-  background: var(--bg-secondary);
-  border: 2px solid var(--border-light);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-medium);
   color: var(--text-secondary);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: 0.875rem 2rem;
   border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 1rem;
 }
 
 .btn-secondary:hover {
-  background: var(--border-light);
+  background: var(--bg-secondary);
+  border-color: var(--border-medium);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
 }
 
 .btn-primary {
-  background: var(--primary);
-  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border: 2px solid transparent;
   color: white;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: 0.875rem 2rem;
   border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+  font-size: 1rem;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .folder-card.loading {

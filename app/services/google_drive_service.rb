@@ -22,13 +22,14 @@ class GoogleDriveService
       metadata,
       upload_source: file.tempfile,
       content_type: mime_type,
-      fields: 'id'
+      fields: 'id',
+      supports_all_drives: true
     )
     uploaded_file.id
   end
 
   def delete_file(file_id)
-    @drive_service.delete_file(file_id)
+    @drive_service.delete_file(file_id, supports_all_drives: true)
   end
 
   def share_publicly(file_id)
@@ -36,7 +37,73 @@ class GoogleDriveService
       type: 'anyone',
       role: 'reader'
     )
-    @drive_service.create_permission(file_id, permission)
+    @drive_service.create_permission(file_id, permission, supports_all_drives: true)
+  end
+
+  def get_file_content(file_id)
+    content = StringIO.new
+    @drive_service.get_file(
+      file_id,
+      download_dest: content,
+      supports_all_drives: true
+    )
+    content.rewind
+    content
+  end
+
+  def export_file(file_id, mime_type)
+    content = StringIO.new
+    @drive_service.export_file(
+      file_id,
+      mime_type,
+      download_dest: content,
+      supports_all_drives: true
+    )
+    content.rewind
+    content
+  end
+
+  def get_file_metadata(file_id)
+    @drive_service.get_file(
+      file_id,
+      fields: 'id,name,mimeType,size,createdTime,modifiedTime',
+      supports_all_drives: true
+    )
+  end
+
+  def list_files_in_folder(folder_id)
+    files = []
+    page_token = nil
+    
+    loop do
+      result = @drive_service.list_files(
+        q: "'#{folder_id}' in parents and trashed=false",
+        fields: 'nextPageToken, files(id, name, mimeType, size, createdTime)',
+        page_size: 100,
+        page_token: page_token,
+        supports_all_drives: true,
+        include_items_from_all_drives: true
+      )
+      
+      files.concat(result.files || [])
+      page_token = result.next_page_token
+      break if page_token.nil?
+    end
+    
+    files
+  end
+
+  def copy_file_to_folder(file_id, destination_folder_id, new_name: nil)
+    metadata = { parents: [destination_folder_id] }
+    metadata[:name] = new_name if new_name
+    
+    copied_file = @drive_service.copy_file(
+      file_id,
+      Google::Apis::DriveV3::File.new(metadata),
+      fields: 'id',
+      supports_all_drives: true
+    )
+    copied_file.id
   end
 
   private
@@ -51,6 +118,6 @@ class GoogleDriveService
   end
 
   def create_permission(file_id, permission)
-    @drive_service.create_permission(file_id, permission)
+    @drive_service.create_permission(file_id, permission, supports_all_drives: true)
   end
 end
