@@ -100,7 +100,7 @@ class GoogleDriveService
 
     copied_file = @drive_service.copy_file(
       file_id,
-      file_object: file_metadata,
+      file_metadata,
       fields: 'id',
       supports_all_drives: true
     )
