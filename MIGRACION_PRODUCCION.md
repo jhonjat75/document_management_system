@@ -44,6 +44,16 @@ Esto mostrará:
 - Cuántos documentos en BD se actualizarían por cada archivo
 - NO hace ningún cambio real
 
+## Paso 1.5: (Opcional) Limpiar carpeta destino
+
+Si quieres empezar desde cero y eliminar archivos que ya fueron copiados anteriormente:
+
+```bash
+RAILS_ENV=production rails google_drive:clean_destination
+```
+
+**⚠️ ADVERTENCIA**: Esto eliminará TODOS los archivos de la carpeta destino. Debes escribir "ELIMINAR" para confirmar.
+
 ## Paso 2: Ejecutar Migración Real
 
 **IMPORTANTE**: Esto copiará archivos y actualizará la BD. Asegúrate del backup.

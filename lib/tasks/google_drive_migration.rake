@@ -75,6 +75,65 @@ namespace :google_drive do
     service.migrate_all(dry_run: true, update_documents: false)
   end
 
+  desc 'LIMPIAR: Eliminar todos los archivos de la carpeta destino (¡CUIDADO!)'
+  task :clean_destination, [:folder_id] => :environment do |_t, args|
+    folder_id = args[:folder_id] || ENV.fetch('GOOGLE_DRIVE_FOLDER_ID', nil)
+
+    if folder_id.nil?
+      puts 'ERROR: Debes especificar folder_id o configurar GOOGLE_DRIVE_FOLDER_ID'
+      exit 1
+    end
+
+    drive_service = GoogleDriveService.new
+    files = drive_service.list_files_in_folder(folder_id)
+
+    puts '=== LIMPIEZA DE CARPETA DESTINO ==='
+    puts "Folder ID: #{folder_id}"
+    puts "Total de archivos a eliminar: #{files.count}"
+    puts ''
+    puts '⚠️  ADVERTENCIA: Esta acción NO se puede deshacer!'
+    puts ''
+
+    if files.empty?
+      puts 'La carpeta ya está vacía.'
+      exit 0
+    end
+
+    print '¿Estás SEGURO de que quieres eliminar todos estos archivos? (escribe "ELIMINAR" para confirmar): '
+    confirmation = STDIN.gets.chomp
+
+    unless confirmation == 'ELIMINAR'
+      puts 'Operación cancelada.'
+      exit 0
+    end
+
+    puts ''
+    puts 'Eliminando archivos...'
+    puts ''
+
+    deleted = 0
+    failed = 0
+
+    files.each_with_index do |file, index|
+      print "[#{index + 1}/#{files.count}] Eliminando: #{file.name}... "
+      begin
+        drive_service.delete_file(file.id)
+        puts '✓'
+        deleted += 1
+      rescue StandardError => e
+        puts "✗ Error: #{e.message}"
+        failed += 1
+      end
+    end
+
+    puts ''
+    puts '=== RESUMEN ==='
+    puts "Eliminados exitosamente: #{deleted}"
+    puts "Fallidos: #{failed}"
+    puts ''
+    puts '✅ Limpieza completada'
+  end
+
   desc 'Listar archivos en una carpeta de Google Drive'
   task :list_files, [:folder_id] => :environment do |_t, args|
     folder_id = args[:folder_id] || ENV.fetch('GOOGLE_DRIVE_FOLDER_ID', nil)
