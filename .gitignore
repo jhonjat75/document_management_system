@@ -38,3 +38,9 @@ yarn-debug.log*
 .yarn-integrity
 /coverage
 config/credentials/google_service_account.json
+
+# Database backups
+/backups/*.sql
+/backups/*.dump
+backup_*.sql
+backup_*.dump

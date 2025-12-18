@@ -73,6 +73,8 @@ class GoogleDriveMigrationService
       new_name: file.name
     )
     
+    return nil unless new_file_id
+    
     @drive_service.share_publicly(new_file_id)
     
     new_file_id

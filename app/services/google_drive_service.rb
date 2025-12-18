@@ -74,7 +74,7 @@ class GoogleDriveService
   def list_files_in_folder(folder_id)
     files = []
     page_token = nil
-    
+
     loop do
       result = @drive_service.list_files(
         q: "'#{folder_id}' in parents and trashed=false",
@@ -84,22 +84,23 @@ class GoogleDriveService
         supports_all_drives: true,
         include_items_from_all_drives: true
       )
-      
+
       files.concat(result.files || [])
       page_token = result.next_page_token
       break if page_token.nil?
     end
-    
+
     files
   end
 
   def copy_file_to_folder(file_id, destination_folder_id, new_name: nil)
-    metadata = { parents: [destination_folder_id] }
-    metadata[:name] = new_name if new_name
-    
+    file_metadata = Google::Apis::DriveV3::File.new
+    file_metadata.parents = [destination_folder_id]
+    file_metadata.name = new_name if new_name
+
     copied_file = @drive_service.copy_file(
       file_id,
-      Google::Apis::DriveV3::File.new(metadata),
+      file_object: file_metadata,
       fields: 'id',
       supports_all_drives: true
     )

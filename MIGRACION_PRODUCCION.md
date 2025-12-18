@@ -3,10 +3,27 @@
 ## Antes de ejecutar
 
 1. **Backup de la base de datos** (CRÍTICO):
+   
+   **Opción más simple (si tienes variables .env):**
    ```bash
-   # Ejemplo con PostgreSQL
-   pg_dump -h localhost -U usuario -d nombre_db > backup_antes_migracion_$(date +%Y%m%d_%H%M%S).sql
+   # Cargar variables de entorno
+   export $(cat .env | grep POSTGRES | xargs)
+   
+   # Ejecutar backup
+   pg_dump -h localhost -U $POSTGRES_USER -d document_management_system_production > backup_antes_migracion_$(date +%Y%m%d_%H%M%S).sql
    ```
+   
+   **O usar el script automatizado:**
+   ```bash
+   ./backup_database.sh
+   ```
+   
+   **Comando directo usando variables de entorno:**
+   ```bash
+   mkdir -p backups && PGPASSWORD=$POSTGRES_PASSWORD pg_dump -h localhost -U $POSTGRES_USER -d document_management_system_production > backups/backup_antes_migracion_$(date +%Y%m%d_%H%M%S).sql
+   ```
+   
+   **Ver detalles completos en:** `BACKUP_PRODUCCION.md`
 
 2. **Verificar variables de entorno**:
    - `GOOGLE_DRIVE_FOLDER_ID` debe estar configurada con la nueva carpeta (Shared Drive)
@@ -19,7 +36,7 @@
 Para ver qué se va a migrar sin hacer cambios:
 
 ```bash
-rails google_drive:dry_run[1FIqYgvRuNXLJxA52LcRNCW_H1FuZ14sD]
+RAILS_ENV=production rails google_drive:dry_run[1FIqYgvRuNXLJxA52LcRNCW_H1FuZ14sD]
 ```
 
 Esto mostrará:
@@ -32,8 +49,10 @@ Esto mostrará:
 **IMPORTANTE**: Esto copiará archivos y actualizará la BD. Asegúrate del backup.
 
 ```bash
-rails google_drive:migrate[1FIqYgvRuNXLJxA52LcRNCW_H1FuZ14sD]
+RAILS_ENV=production rails google_drive:migrate[1FIqYgvRuNXLJxA52LcRNCW_H1FuZ14sD]
 ```
+
+**⚠️ CRÍTICO**: Siempre usa `RAILS_ENV=production` para que se conecte a la base de datos de producción.
 
 El comando:
 1. Te pedirá confirmación (escribe 's' y Enter)
