@@ -47,7 +47,7 @@ class GoogleDriveMigrationService
           if new_file_id
             puts "  ✓ Archivo copiado (ID nuevo: #{new_file_id})"
           else
-            puts "  ⚠ No se pudo copiar el archivo (puede no existir, estar en otra ubicación, o ya estar en destino)"
+            puts "  ⚠ No se pudo copiar el archivo"
             @stats[:skipped] += 1
             puts ""
             next
@@ -64,7 +64,11 @@ class GoogleDriveMigrationService
         @stats[:failed] += 1
         error_msg = "#{document.name || document.id}: #{e.message}"
         @stats[:errors] << error_msg
-        puts "  ✗ Error: #{e.message}"
+        puts "  ✗ Error: #{e.class} - #{e.message}"
+        # Mostrar más detalles del error para debugging
+        if e.message.include?('notFound') || e.message.include?('404')
+          puts "    (El archivo con ID #{document.google_file_id} no existe en Google Drive)"
+        end
       end
       
       puts ""
@@ -75,6 +79,18 @@ class GoogleDriveMigrationService
   end
 
   def migrate_file_by_id(file_id, file_name)
+    # Primero verificar que el archivo existe
+    begin
+      metadata = @drive_service.get_file_metadata(file_id)
+      puts "  Archivo encontrado en Drive: #{metadata.name}"
+    rescue => e
+      if e.message.include?('notFound') || e.message.include?('404')
+        raise "El archivo con ID #{file_id} no existe en Google Drive"
+      else
+        raise "Error verificando archivo: #{e.message}"
+      end
+    end
+    
     # Copiar archivo por su ID directamente (no necesita estar en la carpeta origen)
     new_file_id = @drive_service.copy_file_to_folder(
       file_id,
@@ -87,9 +103,6 @@ class GoogleDriveMigrationService
     @drive_service.share_publicly(new_file_id)
     
     new_file_id
-  rescue
-    # Si el archivo no existe o hay error, retornar nil
-    nil
   end
 
   private
