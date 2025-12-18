@@ -24,14 +24,57 @@ class DocumentsController < ApplicationController
 
   # POST /documents or /documents.json
   def create
+    # Extraer el archivo antes de crear el documento (upload no es un atributo del modelo)
+    uploaded_file = params[:document]&.dig(:upload)
+    
+    # Crear documento sin el campo upload
     @document = Document.new(document_params)
+    @document.user = current_user if user_signed_in?
+    
+    # Si viene de ruta anidada, usar el folder_id de la ruta
+    @document.folder_id = params[:folder_id] if params[:folder_id].present?
+    
+    folder_id = @document.folder_id
+
+    # Validar que se haya enviado un archivo
+    if uploaded_file.blank?
+      @document.errors.add(:upload, 'Debes seleccionar un archivo')
+      respond_to do |format|
+        format.html { redirect_to folder_path(folder_id), alert: 'Debes seleccionar un archivo para subir.' }
+        format.json { render json: { error: 'Debes seleccionar un archivo' }, status: :unprocessable_entity }
+      end
+      return
+    end
+
+    # Procesar archivo y subirlo a Google Drive
+    begin
+      result = GoogleFileUploader.upload(uploaded_file)
+      
+      if result && result.file_id.present?
+        @document.google_file_id = result.file_id
+        @document.content_type = result.content_type
+      else
+        respond_to do |format|
+          format.html { redirect_to folder_path(folder_id), alert: 'Error al subir el archivo a Google Drive. Por favor intenta nuevamente.' }
+          format.json { render json: { error: 'No se pudo subir el archivo a Google Drive' }, status: :unprocessable_entity }
+        end
+        return
+      end
+    rescue => e
+      Rails.logger.error "Error en DocumentsController#create: #{e.class} - #{e.message}"
+      respond_to do |format|
+        format.html { redirect_to folder_path(folder_id), alert: "Error al procesar el archivo: #{e.message}" }
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
+      return
+    end
 
     respond_to do |format|
       if @document.save
-        format.html { redirect_to @document, notice: 'Document was successfully created.' }
+        format.html { redirect_to folder_path(folder_id), notice: 'Documento creado exitosamente.' }
         format.json { render :show, status: :created, location: @document }
       else
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { redirect_to folder_path(folder_id), alert: "Error: #{@document.errors.full_messages.join(', ')}" }
         format.json { render json: @document.errors, status: :unprocessable_entity }
       end
     end
@@ -52,10 +95,25 @@ class DocumentsController < ApplicationController
 
   # DELETE /documents/1 or /documents/1.json
   def destroy
+    folder_id = @document.folder_id
+    
+    # Eliminar el archivo de Google Drive si existe
+    if @document.google_file_id.present?
+      begin
+        GoogleDriveService.new.delete_file(@document.google_file_id)
+      rescue => e
+        Rails.logger.error "Error eliminando archivo de Google Drive: #{e.message}"
+      end
+    end
+    
     @document.destroy
 
     respond_to do |format|
-      format.html { redirect_to documents_url, notice: 'Document was successfully destroyed.' }
+      if folder_id.present?
+        format.html { redirect_to folder_path(folder_id), notice: 'Documento eliminado exitosamente.' }
+      else
+        format.html { redirect_to folders_path, notice: 'Documento eliminado exitosamente.' }
+      end
       format.json { head :no_content }
     end
   end

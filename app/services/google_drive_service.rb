@@ -13,12 +13,23 @@ class GoogleDriveService
       scope: SCOPE
     )
 
-    # Si hay un usuario para impersonar, usarlo (domain-wide delegation)
-    # Esto permite acceder a archivos del usuario impersonado
-    # Nota: Si falla, puede ser que el service account tenga acceso directo
-    authorizer.sub = ENV['GOOGLE_DRIVE_IMPERSONATE_USER'] if ENV['GOOGLE_DRIVE_IMPERSONATE_USER'].present?
+    # Intentar primero sin impersonation (más común para Shared Drives)
+    # Solo usar impersonation si es explícitamente necesario
+    # El service account puede tener acceso directo a Shared Drives
+    if ENV['GOOGLE_DRIVE_IMPERSONATE_USER'].present?
+      begin
+        authorizer.sub = ENV['GOOGLE_DRIVE_IMPERSONATE_USER']
+        authorizer.fetch_access_token!
+      rescue Signet::AuthorizationError
+        # Si falla con impersonation, intentar sin impersonation
+        Rails.logger.warn 'Domain-wide delegation falló, intentando sin impersonation'
+        authorizer.sub = nil
+        authorizer.fetch_access_token!
+      end
+    else
+      authorizer.fetch_access_token!
+    end
 
-    authorizer.fetch_access_token!
     @drive_service = Google::Apis::DriveV3::DriveService.new
     @drive_service.authorization = authorizer
     @authorizer = authorizer
@@ -77,8 +88,7 @@ class GoogleDriveService
     @drive_service.get_file(
       file_id,
       fields: 'id,name,mimeType,size,createdTime,modifiedTime,parents',
-      supports_all_drives: true,
-      include_items_from_all_drives: true
+      supports_all_drives: true
     )
   end
 
