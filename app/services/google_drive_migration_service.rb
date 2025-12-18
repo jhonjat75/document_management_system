@@ -94,6 +94,88 @@ class GoogleDriveMigrationService
   end
 
 
+  def retry_failed_documents(document_names: [], dry_run: false, update_documents: false)
+    puts "=== REINTENTO DE MIGRACIÓN DE ARCHIVOS FALLIDOS ==="
+    puts "Documentos a reintentar: #{document_names.join(', ')}"
+    puts "Modo dry run: #{dry_run}"
+    puts "Actualizar documentos en BD: #{update_documents}"
+    puts ""
+
+    documents = Document.where(name: document_names)
+    @stats[:total] = documents.count
+
+    if documents.empty?
+      puts "❌ No se encontraron documentos con esos nombres."
+      return @stats
+    end
+
+    puts "Total de documentos encontrados: #{@stats[:total]}"
+    puts ""
+
+    # Obtener todos los archivos de Drive ordenados
+    puts "Obteniendo archivos de Drive..."
+    all_drive_files = @drive_service.list_files_in_folder(@source_folder_id)
+    all_drive_files = all_drive_files.select { |f| f.created_time }.sort_by { |f| Time.parse(f.created_time.to_s) }
+    
+    puts "Total de archivos en Drive: #{all_drive_files.count}"
+    puts ""
+
+    documents.each_with_index do |document, doc_index|
+      puts "[#{doc_index + 1}/#{@stats[:total]}] Reintentando: #{document.name || document.title || 'Sin nombre'}"
+      puts "  BD created_at: #{document.created_at}"
+
+      begin
+        # Encontrar el archivo correspondiente por posición en la lista ordenada
+        # Necesitamos encontrar la posición de este documento en la lista completa ordenada
+        all_documents = Document.where.not(google_file_id: nil).order(created_at: :asc)
+        position = all_documents.index(document)
+        
+        if position.nil? || position >= all_drive_files.count
+          raise "No se pudo encontrar la posición correspondiente del archivo en Drive"
+        end
+
+        drive_file = all_drive_files[position]
+        puts "  Drive: #{drive_file.name} (ID: #{drive_file.id})"
+        puts "  Drive created_time: #{drive_file.created_time}"
+
+        if dry_run
+          puts "  [DRY RUN] ✓ Se migraría este documento"
+          @stats[:skipped] += 1
+        else
+          new_file_id = @drive_service.copy_file_to_folder(
+            drive_file.id,
+            @destination_folder_id
+          )
+
+          if new_file_id
+            @drive_service.share_publicly(new_file_id)
+            puts "  ✓ Archivo copiado (ID nuevo: #{new_file_id})"
+
+            if update_documents
+              document.update(google_file_id: new_file_id)
+              puts "  ✓ Documento actualizado en BD con nuevo ID"
+            end
+
+            @stats[:migrated] += 1
+          else
+            puts "  ⚠ No se pudo copiar el archivo"
+            @stats[:skipped] += 1
+          end
+        end
+      rescue => e
+        @stats[:failed] += 1
+        error_msg = "#{document.name || document.id}: #{e.message}"
+        @stats[:errors] << error_msg
+        puts "  ✗ Error: #{e.class} - #{e.message}"
+      end
+
+      puts ""
+    end
+
+    print_summary
+    @stats
+  end
+
   private
 
   def print_summary

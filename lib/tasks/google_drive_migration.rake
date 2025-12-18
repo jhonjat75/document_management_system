@@ -75,6 +75,69 @@ namespace :google_drive do
     service.migrate_all(dry_run: true, update_documents: false)
   end
 
+  desc 'REINTENTAR: Reintentar migración de documentos específicos por nombre'
+  task :retry, %i[source_folder_id destination_folder_id] => :environment do |_t, args|
+    source_folder_id = args[:source_folder_id] || ENV['GOOGLE_DRIVE_OLD_FOLDER_ID'] || '1FIqYgvRuNXLJxA52LcRNCW_H1FuZ14sD'
+    destination_folder_id = args[:destination_folder_id] || ENV.fetch('GOOGLE_DRIVE_FOLDER_ID', nil)
+
+    if destination_folder_id.nil?
+      puts 'ERROR: Debes especificar destination_folder_id o configurar GOOGLE_DRIVE_FOLDER_ID'
+      exit 1
+    end
+
+    puts '=== REINTENTO DE MIGRACIÓN DE ARCHIVOS FALLIDOS ==='
+    puts ''
+    puts 'Ingresa los nombres de los documentos a reintentar (uno por línea).'
+    puts 'Presiona Enter dos veces cuando termines:'
+    puts ''
+
+    document_names = []
+    while (line = STDIN.gets.chomp)
+      break if line.empty? && document_names.any?
+
+      document_names << line.strip unless line.strip.empty?
+    end
+
+    if document_names.empty?
+      puts 'No se ingresaron nombres de documentos.'
+      exit 0
+    end
+
+    puts ''
+    puts "Documentos a reintentar: #{document_names.join(', ')}"
+    puts ''
+    print '¿Continuar? (s/n): '
+
+    response = STDIN.gets.chomp.downcase
+    unless %w[s y].include?(response)
+      puts 'Reintento cancelado.'
+      exit 0
+    end
+
+    puts ''
+    puts 'Iniciando reintento...'
+    puts ''
+
+    service = GoogleDriveMigrationService.new(
+      source_folder_id: source_folder_id,
+      destination_folder_id: destination_folder_id
+    )
+
+    stats = service.retry_failed_documents(
+      document_names: document_names,
+      dry_run: false,
+      update_documents: true
+    )
+
+    puts ''
+    if stats[:failed] > 0
+      puts "⚠️  ATENCIÓN: #{stats[:failed]} archivo(s) fallaron nuevamente."
+      exit 1
+    else
+      puts '✅ Reintento completado exitosamente!'
+    end
+  end
+
   desc 'LIMPIAR: Eliminar todos los archivos de la carpeta destino (¡CUIDADO!)'
   task :clean_destination, [:folder_id] => :environment do |_t, args|
     folder_id = args[:folder_id] || ENV.fetch('GOOGLE_DRIVE_FOLDER_ID', nil)
