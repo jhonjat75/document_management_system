@@ -7,13 +7,20 @@ class GoogleDriveService
   SCOPE = ['https://www.googleapis.com/auth/drive'].freeze
 
   def initialize
-    @authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: File.open(ENV.fetch('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON')),
+    json_key_io = File.open(ENV.fetch('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON'))
+    authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
+      json_key_io: json_key_io,
       scope: SCOPE
     )
-    @authorizer.fetch_access_token!
+
+    # Si hay un usuario para impersonar, usarlo (domain-wide delegation)
+    # Esto permite acceder a archivos del usuario impersonado
+    authorizer.sub = ENV['GOOGLE_DRIVE_IMPERSONATE_USER'] if ENV['GOOGLE_DRIVE_IMPERSONATE_USER'].present?
+
+    authorizer.fetch_access_token!
     @drive_service = Google::Apis::DriveV3::DriveService.new
     @drive_service.authorization = authorizer
+    @authorizer = authorizer
   end
 
   def upload(file:, name:, mime_type:, folder_id:)
@@ -45,7 +52,8 @@ class GoogleDriveService
     @drive_service.get_file(
       file_id,
       download_dest: content,
-      supports_all_drives: true
+      supports_all_drives: true,
+      include_items_from_all_drives: true
     )
     content.rewind
     content
@@ -57,7 +65,8 @@ class GoogleDriveService
       file_id,
       mime_type,
       download_dest: content,
-      supports_all_drives: true
+      supports_all_drives: true,
+      include_items_from_all_drives: true
     )
     content.rewind
     content
@@ -102,7 +111,8 @@ class GoogleDriveService
       file_id,
       file_metadata,
       fields: 'id',
-      supports_all_drives: true
+      supports_all_drives: true,
+      include_items_from_all_drives: true
     )
     copied_file.id
   end
