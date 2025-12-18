@@ -15,6 +15,7 @@ class GoogleDriveService
 
     # Si hay un usuario para impersonar, usarlo (domain-wide delegation)
     # Esto permite acceder a archivos del usuario impersonado
+    # Nota: Si falla, puede ser que el service account tenga acceso directo
     authorizer.sub = ENV['GOOGLE_DRIVE_IMPERSONATE_USER'] if ENV['GOOGLE_DRIVE_IMPERSONATE_USER'].present?
 
     authorizer.fetch_access_token!
@@ -75,8 +76,9 @@ class GoogleDriveService
   def get_file_metadata(file_id)
     @drive_service.get_file(
       file_id,
-      fields: 'id,name,mimeType,size,createdTime,modifiedTime',
-      supports_all_drives: true
+      fields: 'id,name,mimeType,size,createdTime,modifiedTime,parents',
+      supports_all_drives: true,
+      include_items_from_all_drives: true
     )
   end
 
@@ -111,8 +113,7 @@ class GoogleDriveService
       file_id,
       file_metadata,
       fields: 'id',
-      supports_all_drives: true,
-      include_items_from_all_drives: true
+      supports_all_drives: true
     )
     copied_file.id
   end

@@ -20,57 +20,72 @@ class GoogleDriveMigrationService
     puts "Carpeta destino: #{@destination_folder_id}"
     puts "Modo dry run: #{dry_run}"
     puts "Actualizar documentos en BD: #{update_documents}"
+    puts "Estrategia: Matching por orden de fecha de creación (1:1)"
     puts ""
 
-    # Estrategia correcta: iterar sobre documentos en BD, no sobre archivos en Drive
-    documents = Document.where.not(google_file_id: nil)
+    # Obtener documentos de BD ordenados por fecha de creación
+    documents = Document.where.not(google_file_id: nil).order(created_at: :asc)
     @stats[:total] = documents.count
 
-    puts "Total de documentos en BD con google_file_id: #{@stats[:total]}"
+    puts "Total de documentos en BD: #{@stats[:total]}"
+
+    # Obtener archivos de Drive ordenados por fecha de creación
+    puts "Obteniendo archivos de Drive..."
+    drive_files = @drive_service.list_files_in_folder(@source_folder_id)
+    drive_files = drive_files.select { |f| f.created_time }.sort_by { |f| Time.parse(f.created_time.to_s) }
+    
+    puts "Total de archivos en Drive: #{drive_files.count}"
     puts ""
 
-    documents.each_with_index do |document, index|
-      puts "[#{index + 1}/#{@stats[:total]}] Procesando documento: #{document.name || document.title || 'Sin nombre'}"
+    if documents.count != drive_files.count
+      puts "⚠️  ADVERTENCIA: Número de documentos (#{documents.count}) no coincide con número de archivos (#{drive_files.count})"
+      puts "   El matching 1:1 puede no ser preciso."
+      puts ""
+    end
+
+    # Matching 1:1 por orden de fecha
+    [documents.count, drive_files.count].min.times do |index|
+      document = documents[index]
+      drive_file = drive_files[index]
+
+      puts "[#{index + 1}/#{@stats[:total]}] Documento BD: #{document.name || document.title || 'Sin nombre'}"
+      puts "  BD created_at: #{document.created_at}"
+      puts "  Drive: #{drive_file.name} (ID: #{drive_file.id})"
+      puts "  Drive created_time: #{drive_file.created_time}"
 
       begin
-        old_file_id = document.google_file_id
-        
         if dry_run
-          puts "  [DRY RUN] google_file_id actual: #{old_file_id}"
           puts "  [DRY RUN] ✓ Se migraría este documento"
           @stats[:skipped] += 1
         else
-          # Intentar copiar el archivo desde su ubicación actual (por ID)
-          # Google Drive permite copiar archivos incluso si ya están en otras carpetas
-          new_file_id = migrate_file_by_id(old_file_id, document.name || document.title || '')
-          
+          # Copiar el archivo a la carpeta destino
+          new_file_id = @drive_service.copy_file_to_folder(
+            drive_file.id,
+            @destination_folder_id
+          )
+
           if new_file_id
+            @drive_service.share_publicly(new_file_id)
             puts "  ✓ Archivo copiado (ID nuevo: #{new_file_id})"
+
+            if update_documents
+              document.update(google_file_id: new_file_id)
+              puts "  ✓ Documento actualizado en BD con nuevo ID"
+            end
+
+            @stats[:migrated] += 1
           else
             puts "  ⚠ No se pudo copiar el archivo"
             @stats[:skipped] += 1
-            puts ""
-            next
           end
-          
-          if update_documents && new_file_id
-            document.update(google_file_id: new_file_id)
-            puts "  ✓ Documento actualizado en BD"
-          end
-          
-          @stats[:migrated] += 1
         end
       rescue => e
         @stats[:failed] += 1
         error_msg = "#{document.name || document.id}: #{e.message}"
         @stats[:errors] << error_msg
         puts "  ✗ Error: #{e.class} - #{e.message}"
-        # Mostrar más detalles del error para debugging
-        if e.message.include?('notFound') || e.message.include?('404')
-          puts "    (El archivo con ID #{document.google_file_id} no existe en Google Drive)"
-        end
       end
-      
+
       puts ""
     end
 
@@ -78,32 +93,6 @@ class GoogleDriveMigrationService
     @stats
   end
 
-  def migrate_file_by_id(file_id, file_name)
-    # Primero verificar que el archivo existe
-    begin
-      metadata = @drive_service.get_file_metadata(file_id)
-      puts "  Archivo encontrado en Drive: #{metadata.name}"
-    rescue => e
-      if e.message.include?('notFound') || e.message.include?('404')
-        raise "El archivo con ID #{file_id} no existe en Google Drive"
-      else
-        raise "Error verificando archivo: #{e.message}"
-      end
-    end
-    
-    # Copiar archivo por su ID directamente (no necesita estar en la carpeta origen)
-    new_file_id = @drive_service.copy_file_to_folder(
-      file_id,
-      @destination_folder_id,
-      new_name: file_name
-    )
-    
-    return nil unless new_file_id
-    
-    @drive_service.share_publicly(new_file_id)
-    
-    new_file_id
-  end
 
   private
 
